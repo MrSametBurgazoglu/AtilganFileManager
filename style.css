@@ -1,0 +1,151 @@
+window {
+    background-color: #2d2d2d;
+    color: #f5f5f5;
+}
+
+headerbar {
+    background-color: #242424;
+    border-bottom: 1px solid #404040;
+}
+
+.path-bar {
+    padding: 6px;
+}
+
+.path-bar button {
+    background: none;
+    border: none;
+    box-shadow: none;
+    padding: 6px;
+    border-radius: 4px;
+}
+
+.path-bar button:hover {
+    background-color: #404040;
+}
+
+.path-bar button:checked {
+    background-color: #353535;
+    border-radius: 1px solid;
+}
+
+.path-separator {
+    padding-left: 6px;
+    padding-right: 6px;
+    color: #aaa;
+}
+
+.search-entry {
+    background-color: #404040;
+    color: #f5f5f5;
+    border-radius: 5px;
+    padding: 6px 12px;
+    border: 1px solid #505050;
+}
+
+.search-entry:focus {
+    border-color: #707070;
+}
+
+button {
+    background: none;
+    color: #f5f5f5;
+    padding: 6px 12px;
+    border: none;
+    box-shadow: none;
+    transition:
+        background-color 0.3s,
+        box-shadow 0.3s;
+}
+
+button:hover {
+    background-color: #505050;
+}
+
+button:active {
+    background-color: #353535;
+}
+
+separator {
+    background-color: #555;
+}
+
+scrollbar {
+    background-color: #2d2d2d;
+}
+
+scrollbar slider {
+    background-color: #404040;
+    border-radius: 3px;
+    min-width: 6px;
+    min-height: 6px;
+}
+
+scrollbar slider:hover {
+    background-color: #505050;
+}
+
+.sidebar {
+    background-color: transparent;
+}
+
+.sidebar .sidebar-button {
+    background: none;
+    border: none;
+    box-shadow: none;
+}
+
+.sidebar .sidebar-button:hover {
+    background-color: #404040;
+}
+
+.sidebar .sidebar-button.selected {
+    background-color: #505050;
+}
+
+.preview-panel {
+    background-color: #242424;
+    padding: 12px;
+}
+
+.dir-previewer-header {
+    padding: 3px;
+    border-bottom: 1px solid #404040;
+}
+
+popover > box {
+    padding: 12px;
+    background-color: #242424;
+}
+
+.preview-label {
+    font-size: 16px;
+    padding: 10px;
+}
+
+headerbar > .titlebar-right > .titlebutton,
+headerbar > .titlebar-left > .titlebutton {
+    background: none;
+    border: none;
+    box-shadow: none;
+}
+
+headerbar > .titlebar-right > .titlebutton:hover,
+headerbar > .titlebar-left > .titlebutton:hover {
+    background-color: #404040;
+}
+
+.preview-info-box {
+    font-size: 16px;
+    border: 2px solid #404040;
+    border-radius: 5px;
+    background-color: #2d2d2d;
+}
+
+.preview-info-item {
+    padding: 2px;
+}
+
+.preview-info-item:hover {
+    border-color: #505050;
+}
