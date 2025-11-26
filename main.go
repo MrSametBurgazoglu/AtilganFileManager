@@ -53,6 +53,15 @@ func NewMainBox(mainWindow *gtk.Window, headerBar *header.HeaderBar) *MainBox {
 		shortcut_popup.NewShortcutPopup(mainWindow)
 	})
 
+	headerBar.PreviewerPanelButton.ConnectClicked(func() {
+		mainBox.PreviewerPanel.SetVisible(!mainBox.PreviewerPanel.Visible())
+		if mainBox.PreviewerPanel.Visible() {
+			mainBox.ViewerPanel.SetHExpand(false)
+		} else {
+			mainBox.ViewerPanel.SetHExpand(true)
+		}
+	})
+
 	mainBox.SpecialPaths, err = special_path.NewSpecialPathManager()
 	if err != nil {
 		println(err.Error())

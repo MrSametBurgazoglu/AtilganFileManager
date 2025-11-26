@@ -6,9 +6,10 @@ import (
 
 type HeaderBar struct {
 	*gtk.HeaderBar
-	ShortcutsButton     *gtk.Button
-	SearchButton        *gtk.Button
-	CircularProgressBar *CircularProgressBar
+	ShortcutsButton      *gtk.Button
+	SearchButton         *gtk.Button
+	PreviewerPanelButton *gtk.Button
+	CircularProgressBar  *CircularProgressBar
 }
 
 func NewHeaderBar(mainWindow *gtk.ApplicationWindow) *HeaderBar {
@@ -40,11 +41,15 @@ func NewHeaderBar(mainWindow *gtk.ApplicationWindow) *HeaderBar {
 	shortcutsButton := gtk.NewButtonFromIconName("preferences-desktop-keyboard-shortcuts-symbolic")
 	headerBar.PackEnd(shortcutsButton)
 
+	previewerPanelButton := gtk.NewButtonFromIconName("view-reveal-symbolic")
+	headerBar.PackEnd(previewerPanelButton)
+
 	return &HeaderBar{
-		HeaderBar:           headerBar,
-		ShortcutsButton:     shortcutsButton,
-		SearchButton:        searchButton,
-		CircularProgressBar: circularProgressBar,
+		HeaderBar:            headerBar,
+		ShortcutsButton:      shortcutsButton,
+		SearchButton:         searchButton,
+		CircularProgressBar:  circularProgressBar,
+		PreviewerPanelButton: previewerPanelButton,
 	}
 }
 
