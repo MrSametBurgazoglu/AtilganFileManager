@@ -9,6 +9,7 @@ import (
 	"github.com/MrSametBurgazoglu/atilgan/fileops"
 	"github.com/MrSametBurgazoglu/atilgan/special_path"
 	"github.com/MrSametBurgazoglu/atilgan/tag_popup"
+	"github.com/MrSametBurgazoglu/atilgan/theme"
 	"github.com/MrSametBurgazoglu/atilgan/types"
 	"github.com/diamondburned/gotk4/pkg/cairo"
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
@@ -16,32 +17,10 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
 
-type FileListTheme struct {
-	BackgroundColor       gdk.RGBA
-	TextColor             gdk.RGBA
-	SelectedBgColor       gdk.RGBA
-	SelectedTextColor     gdk.RGBA
-	HeaderBackgroundColor gdk.RGBA
-	HeaderTextColor       gdk.RGBA
-	CopyCutBgColor        gdk.RGBA
-	HoverBgColor          gdk.RGBA
-}
 
-func NewFileListTheme() *FileListTheme {
-	return &FileListTheme{
-		BackgroundColor:       gdk.NewRGBA(45.0/255, 45.0/255, 45.0/255, 1),
-		TextColor:             gdk.NewRGBA(245.0/255, 245.0/255, 245.0/255, 1),
-		SelectedBgColor:       gdk.NewRGBA(64.0/255, 64.0/255, 64.0/255, 1),
-		SelectedTextColor:     gdk.NewRGBA(245.0/255, 245.0/255, 245.0/255, 1),
-		HeaderBackgroundColor: gdk.NewRGBA(36.0/255, 36.0/255, 36.0/255, 1),
-		HeaderTextColor:       gdk.NewRGBA(245.0/255, 245.0/255, 245.0/255, 1),
-		CopyCutBgColor:        gdk.NewRGBA(50.0/255, 70.0/255, 90.0/255, 1),
-		HoverBgColor:          gdk.NewRGBA(55.0/255, 55.0/255, 55.0/255, 1),
-	}
-}
 
 const (
-	rowHeight    = 36
+	rowHeight    = 24
 	headerHeight = 20
 )
 
@@ -54,7 +33,8 @@ type FileList struct {
 	canSelect          bool
 	CanFocus           bool
 	CopyCutPaths       []string
-	theme              *FileListTheme
+	colorTheme         *theme.ColorTheme
+	themeConfig        *theme.SpacingConfig
 	specialPathManager *special_path.SpecialPathManager
 	parent             *gtk.Window
 
@@ -72,7 +52,8 @@ func NewFileList(canSelect bool, specialPathManager *special_path.SpecialPathMan
 		iconTheme:          gtk.IconThemeGetForDisplay(gdk.DisplayGetDefault()),
 		canSelect:          canSelect,
 		CanFocus:           true,
-		theme:              NewFileListTheme(),
+		colorTheme:         theme.NewColorTheme(),
+		themeConfig:        theme.NewTheme(),
 		specialPathManager: specialPathManager,
 		parent:             parent,
 	}
@@ -145,12 +126,20 @@ func NewFileList(canSelect bool, specialPathManager *special_path.SpecialPathMan
 			}
 			item := fl.Items[idx]
 
-			iconSize := 32
+			iconSize := 16
 			iconName := fileops.GetIconForFile(item.Name)
 			if item.IsDir {
-				iconName = "folder"
+				iconName = fileops.GetIconForFolder(item.Path)
 			}
+			
+			// Try to lookup icon, fallback to default if not found
 			paintable := fl.iconTheme.LookupIcon(iconName, nil, iconSize, 1, gtk.TextDirNone, 0)
+			if paintable == nil && item.IsDir {
+				paintable = fl.iconTheme.LookupIcon("folder", nil, iconSize, 1, gtk.TextDirNone, 0)
+			}
+			if paintable == nil && !item.IsDir {
+				paintable = fl.iconTheme.LookupIcon("text-x-generic", nil, iconSize, 1, gtk.TextDirNone, 0)
+			}
 			if paintable != nil {
 				dragSource.SetIcon(paintable, 0, 0)
 			}
@@ -224,39 +213,45 @@ func (fl *FileList) onDraw(da *gtk.DrawingArea, cr *cairo.Context, w, h int) {
 }
 
 func (fl *FileList) drawHeader(cr *cairo.Context, text string, y int) {
-	cr.SetSourceRGBA(float64(fl.theme.HeaderBackgroundColor.Red()), float64(fl.theme.HeaderBackgroundColor.Green()), float64(fl.theme.HeaderBackgroundColor.Blue()), float64(fl.theme.HeaderBackgroundColor.Alpha()))
+	cr.SetSourceRGBA(float64(fl.colorTheme.HeaderBackgroundColor.Red()), float64(fl.colorTheme.HeaderBackgroundColor.Green()), float64(fl.colorTheme.HeaderBackgroundColor.Blue()), float64(fl.colorTheme.HeaderBackgroundColor.Alpha()))
 	cr.Rectangle(0, float64(y), 1200, float64(headerHeight))
 	cr.Fill()
 
-	cr.SetSourceRGBA(float64(fl.theme.HeaderTextColor.Red()), float64(fl.theme.HeaderTextColor.Green()), float64(fl.theme.HeaderTextColor.Blue()), float64(fl.theme.HeaderTextColor.Alpha()))
+	cr.SetSourceRGBA(float64(fl.colorTheme.HeaderTextColor.Red()), float64(fl.colorTheme.HeaderTextColor.Green()), float64(fl.colorTheme.HeaderTextColor.Blue()), float64(fl.colorTheme.HeaderTextColor.Alpha()))
 	cr.SelectFontFace("Sans", cairo.FontSlantNormal, cairo.FontWeightBold)
-	cr.SetFontSize(10)
+	cr.SetFontSize(fl.themeConfig.Fonts.HeaderSize)
 	cr.MoveTo(8, float64(y+15))
 	cr.ShowText(text)
 }
 
 func (fl *FileList) drawRow(cr *cairo.Context, idx int, item *types.ListItem, y int) {
 	if idx == fl.SelectedIDX && fl.canSelect {
-		cr.SetSourceRGBA(float64(fl.theme.SelectedBgColor.Red()), float64(fl.theme.SelectedBgColor.Green()), float64(fl.theme.SelectedBgColor.Blue()), float64(fl.theme.SelectedBgColor.Alpha()))
+		cr.SetSourceRGBA(float64(fl.colorTheme.SelectedBgColor.Red()), float64(fl.colorTheme.SelectedBgColor.Green()), float64(fl.colorTheme.SelectedBgColor.Blue()), float64(fl.colorTheme.SelectedBgColor.Alpha()))
 		cr.Rectangle(0, float64(y), 1200, float64(rowHeight))
 		cr.Fill()
 	} else if slices.Contains(fl.CopyCutPaths, item.Path) {
-		cr.SetSourceRGBA(float64(fl.theme.CopyCutBgColor.Red()), float64(fl.theme.CopyCutBgColor.Green()), float64(fl.theme.CopyCutBgColor.Blue()), float64(fl.theme.CopyCutBgColor.Alpha()))
+		cr.SetSourceRGBA(float64(fl.colorTheme.CopyCutBgColor.Red()), float64(fl.colorTheme.CopyCutBgColor.Green()), float64(fl.colorTheme.CopyCutBgColor.Blue()), float64(fl.colorTheme.CopyCutBgColor.Alpha()))
 		cr.Rectangle(0, float64(y), 1200, float64(rowHeight))
 		cr.Fill()
 	} else {
-		cr.SetSourceRGBA(float64(fl.theme.BackgroundColor.Red()), float64(fl.theme.BackgroundColor.Green()), float64(fl.theme.BackgroundColor.Blue()), float64(fl.theme.BackgroundColor.Alpha()))
+		cr.SetSourceRGBA(float64(fl.colorTheme.BackgroundColor.Red()), float64(fl.colorTheme.BackgroundColor.Green()), float64(fl.colorTheme.BackgroundColor.Blue()), float64(fl.colorTheme.BackgroundColor.Alpha()))
 		cr.Rectangle(0, float64(y), 1200, float64(rowHeight))
 		cr.Fill()
 	}
 
-	iconSize := 24
+	iconSize := 16
 	iconName := fileops.GetIconForFile(item.Name)
 	if item.IsDir {
 		iconName = fileops.GetIconForFolder(item.Path)
 	}
 
 	paintable := fl.iconTheme.LookupIcon(iconName, nil, iconSize, 1, gtk.TextDirNone, 0)
+	if paintable == nil && item.IsDir {
+		paintable = fl.iconTheme.LookupIcon("folder", nil, iconSize, 1, gtk.TextDirNone, 0)
+	}
+	if paintable == nil && !item.IsDir {
+		paintable = fl.iconTheme.LookupIcon("text-x-generic", nil, iconSize, 1, gtk.TextDirNone, 0)
+	}
 	if paintable != nil {
 		file := paintable.File()
 		if file != nil {
@@ -275,23 +270,25 @@ func (fl *FileList) drawRow(cr *cairo.Context, idx int, item *types.ListItem, y 
 	}
 
 	if idx == fl.SelectedIDX && fl.canSelect {
-		cr.SetSourceRGBA(float64(fl.theme.SelectedTextColor.Red()), float64(fl.theme.SelectedTextColor.Green()), float64(fl.theme.SelectedTextColor.Blue()), float64(fl.theme.SelectedTextColor.Alpha()))
+		cr.SetSourceRGBA(float64(fl.colorTheme.SelectedTextColor.Red()), float64(fl.colorTheme.SelectedTextColor.Green()), float64(fl.colorTheme.SelectedTextColor.Blue()), float64(fl.colorTheme.SelectedTextColor.Alpha()))
 	} else {
-		cr.SetSourceRGBA(float64(fl.theme.TextColor.Red()), float64(fl.theme.TextColor.Green()), float64(fl.theme.TextColor.Blue()), float64(fl.theme.TextColor.Alpha()))
+		cr.SetSourceRGBA(float64(fl.colorTheme.TextColor.Red()), float64(fl.colorTheme.TextColor.Green()), float64(fl.colorTheme.TextColor.Blue()), float64(fl.colorTheme.TextColor.Alpha()))
 	}
 	cr.SelectFontFace("Sans", cairo.FontSlantNormal, cairo.FontWeightBold)
-	cr.SetFontSize(14)
-	cr.MoveTo(40, float64(y+23))
+	cr.SetFontSize(fl.themeConfig.Fonts.FilenameSize)
+	yOffset := fl.themeConfig.GetFilenameYOffset(rowHeight)
+	cr.MoveTo(40, float64(y)+yOffset)
 	cr.ShowText(item.Name)
 
 	if idx == fl.SelectedIDX && fl.canSelect {
-		cr.SetSourceRGBA(float64(fl.theme.SelectedTextColor.Red()), float64(fl.theme.SelectedTextColor.Green()), float64(fl.theme.SelectedTextColor.Blue()), float64(fl.theme.SelectedTextColor.Alpha()))
+		cr.SetSourceRGBA(float64(fl.colorTheme.SelectedTextColor.Red()), float64(fl.colorTheme.SelectedTextColor.Green()), float64(fl.colorTheme.SelectedTextColor.Blue()), float64(fl.colorTheme.SelectedTextColor.Alpha()))
 	} else {
-		cr.SetSourceRGBA(float64(fl.theme.TextColor.Red()), float64(fl.theme.TextColor.Green()), float64(fl.theme.TextColor.Blue()), float64(fl.theme.TextColor.Alpha()))
+		cr.SetSourceRGBA(float64(fl.colorTheme.TextColor.Red()), float64(fl.colorTheme.TextColor.Green()), float64(fl.colorTheme.TextColor.Blue()), float64(fl.colorTheme.TextColor.Alpha()))
 	}
 	cr.SelectFontFace("Sans", cairo.FontSlantNormal, cairo.FontWeightNormal)
-	cr.SetFontSize(11)
-	cr.MoveTo(520, float64(y+20))
+	cr.SetFontSize(fl.themeConfig.Fonts.SizeTextSize)
+	sizeYOffset := fl.themeConfig.GetSizeTextYOffset(rowHeight)
+	cr.MoveTo(520, float64(y)+sizeYOffset)
 	if item.IsDir {
 		cr.ShowText(fmt.Sprintf("%d item", item.ItemCount))
 	} else if item.Size > 0 {

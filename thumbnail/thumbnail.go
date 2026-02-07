@@ -6,7 +6,9 @@ import (
 	"errors"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
 )
@@ -34,9 +36,14 @@ func getThumbnailPath(filePath string, size string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	
+	// Convert backslashes to forward slashes for POSIX-compatible URL
+	posixPath := strings.ReplaceAll(absPath, "\\", "/")
+	
+	// On Windows, filepath.Abs returns C:\path, but URL path should be /C:/path
 	u := &url.URL{
 		Scheme: "file",
-		Path:   absPath,
+		Path:   posixPath,
 	}
 	uri := u.String()
 
@@ -49,5 +56,7 @@ func getThumbnailPath(filePath string, size string) (string, error) {
 		return "", err
 	}
 
-	return filepath.Join(homeDir, ".cache", "thumbnails", size, md5sum+".png"), nil
+	cacheDir := path.Join(homeDir, ".cache", "thumbnails", size)
+	// Use filepath for the final join to be OS-compatible
+	return filepath.Join(cacheDir, md5sum+".png"), nil
 }
