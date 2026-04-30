@@ -471,49 +471,27 @@ func (viewer *FileViewer) OpenTerminal() {
 		return
 	}
 
-	// 1. Check $TERMINAL environment variable
-	if term := os.Getenv("TERMINAL"); term != "" {
-		if _, err := exec.LookPath(term); err == nil {
-			cmd := exec.Command(term)
-			cmd.Dir = viewer.Path
-			if err := cmd.Start(); err == nil {
-				return
+	// Linux: Try $TERMINAL then common emulators
+	terminal := os.Getenv("TERMINAL")
+	if terminal == "" {
+		terminals := []string{"ptyxis", "gnome-console", "kgx", "xdg-terminal-exec", "x-terminal-emulator", "gnome-terminal", "konsole", "xfce4-terminal", "alacritty", "kitty", "terminator", "lxterminal", "mate-terminal", "xterm"}
+		for _, t := range terminals {
+			if _, err := exec.LookPath(t); err == nil {
+				terminal = t
+				break
 			}
 		}
 	}
 
-	// 2. Linux Defaults & Fallbacks
-	terminals := []struct {
-		name string
-		args []string
-	}{
-		{"xdg-terminal-exec", []string{}},
-		{"x-terminal-emulator", []string{"-d", viewer.Path}},
-		{"gnome-terminal", []string{"--working-directory=" + viewer.Path}},
-		{"konsole", []string{"--workdir", viewer.Path}},
-		{"xfce4-terminal", []string{"--working-directory=" + viewer.Path}},
-		{"lxterminal", []string{"--working-directory=" + viewer.Path}},
-		{"mate-terminal", []string{"--working-directory=" + viewer.Path}},
-		{"alacritty", []string{"--working-directory", viewer.Path}},
-		{"kitty", []string{"--directory", viewer.Path}},
-		{"terminology", []string{"-d", viewer.Path}},
-		{"xterm", []string{"-e", "cd " + viewer.Path + " && exec bash"}},
-	}
-
-	for _, t := range terminals {
-		if _, err := exec.LookPath(t.name); err == nil {
-			var cmd *exec.Cmd
-			if t.name == "xdg-terminal-exec" {
-				cmd = exec.Command(t.name)
-				cmd.Dir = viewer.Path
-			} else {
-				cmd = exec.Command(t.name, t.args...)
-			}
-
-			if err := cmd.Start(); err == nil {
-				return
-			}
+	if terminal != "" {
+		cmd := exec.Command(terminal)
+		cmd.Dir = viewer.Path
+		err := cmd.Start()
+		if err != nil {
+			fmt.Printf("Failed to start terminal %s: %v\n", terminal, err)
 		}
+		return
 	}
+
 	fmt.Printf("No terminal emulator found for path: %s\n", viewer.Path)
 }

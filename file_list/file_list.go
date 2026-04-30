@@ -161,11 +161,26 @@ func (fl *FileList) SetItems(items []*types.ListItem) {
 	fl.Items = items
 	fl.SelectedIDX = 0
 	fl.textureCache = make(map[string]*gdk.Texture)
+	fl.updateHeight()
 	fl.DrawingArea.QueueDraw()
+}
+
+func (fl *FileList) updateHeight() {
+	y := 0
+	currentGroup := ""
+	for _, item := range fl.Items {
+		if item.Group != currentGroup {
+			y += headerHeight
+			currentGroup = item.Group
+		}
+		y += rowHeight
+	}
+	fl.DrawingArea.SetContentHeight(y)
 }
 
 func (fl *FileList) AddItem(item *types.ListItem) {
 	fl.Items = append(fl.Items, item)
+	fl.updateHeight()
 	fl.DrawingArea.QueueDraw()
 }
 
@@ -207,6 +222,21 @@ func (fl *FileList) onDraw(da *gtk.DrawingArea, cr *cairo.Context, w, h int) {
 		fl.colorTheme.SelectedBgColor = gdk.NewRGBA(accent.Red(), accent.Green(), accent.Blue(), 0.2)
 	}
 
+	// Pre-calculate height to fill background accurately
+	contentHeight := 0
+	tempGroup := ""
+	for _, item := range fl.Items {
+		if item.Group != tempGroup {
+			contentHeight += headerHeight
+			tempGroup = item.Group
+		}
+		contentHeight += rowHeight
+	}
+
+	cr.SetSourceRGBA(float64(fl.colorTheme.BackgroundColor.Red()), float64(fl.colorTheme.BackgroundColor.Green()), float64(fl.colorTheme.BackgroundColor.Blue()), float64(fl.colorTheme.BackgroundColor.Alpha()))
+	cr.Rectangle(0, 0, float64(w), float64(contentHeight))
+	cr.Fill()
+
 	y := 0
 	currentGroup := ""
 
@@ -220,7 +250,6 @@ func (fl *FileList) onDraw(da *gtk.DrawingArea, cr *cairo.Context, w, h int) {
 		fl.drawRow(cr, i, item, y, w)
 		y += rowHeight
 	}
-	fl.DrawingArea.SetContentHeight(y)
 }
 
 func (fl *FileList) selectItem(idx int) {

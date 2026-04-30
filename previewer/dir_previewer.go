@@ -70,6 +70,8 @@ func NewDirPreviewer(path string, changePath func(string), specialPathManager *s
 		specialPathManager: specialPathManager,
 	}
 	viewer.FileViewerList.SetPropagateNaturalHeight(true)
+	viewer.FileViewerList.SetVExpand(false)
+	viewer.FileViewerList.SetVAlign(gtk.AlignStart)
 	viewer.Box.SetVExpand(true)
 	viewer.Box.SetHExpand(true)
 	viewer.Box.SetVAlign(gtk.AlignFill)
@@ -156,6 +158,7 @@ func NewDirPreviewer(path string, changePath func(string), specialPathManager *s
 	scrolled.SetMaxContentWidth(325)
 	scrolled.SetHExpand(false)
 	scrolled.SetVExpand(false)
+	scrolled.SetVAlign(gtk.AlignStart)
 	viewer.stack.SetVExpand(true)
 	viewer.stack.SetHExpand(true)
 	viewer.stack.AddTitled(viewer.FileViewerList, "list", "List")
