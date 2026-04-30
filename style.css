@@ -49,20 +49,27 @@ button,
 menubutton,
 entry, 
 popover > box, 
-.path-bar, 
 .sidebar-button {
     border-radius: 8px;
 }
 
+.path-bar-container,
+.path-bar-container scrolledwindow {
+    background-color: transparent;
+}
+
 .path-bar {
-    background-color: #181825;
-    padding: 4px 8px;
-    margin: 4px;
+    background-color: transparent;
+    padding: 2px 8px;
+    margin: 0;
+    border-radius: 8px;
+    border: none;
 }
 
 .path-bar button {
-    padding: 4px 8px;
+    padding: 4px 10px;
     color: #bac2de;
+    border-radius: 8px;
 }
 
 .path-bar button label {

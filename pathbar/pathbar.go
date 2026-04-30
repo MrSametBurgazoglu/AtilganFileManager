@@ -28,7 +28,10 @@ type PathBarEntryBox struct {
 func NewPathBarEntryBox() *PathBarEntryBox {
 	entryBox := new(PathBarEntryBox)
 	entryBox.Box = gtk.NewBox(gtk.OrientationHorizontal, 6)
+	entryBox.AddCSSClass("path-bar-entry-box")
+	
 	entryBox.PathEntry = gtk.NewEntry()
+	entryBox.PathEntry.SetHExpand(true)
 	entryBox.Append(entryBox.PathEntry)
 
 	copyButton := gtk.NewButtonFromIconName("edit-copy-symbolic")
@@ -45,9 +48,10 @@ func NewPathBar(setPath func(string)) *PathBar {
 	pathBar := &PathBar{
 		Stack: gtk.NewStack(),
 	}
+	pathBar.AddCSSClass("path-bar-container")
 
 	pathBar.SetPath = setPath
-	pathBar.SetHAlign(gtk.AlignFill)
+	pathBar.SetHAlign(gtk.AlignCenter)
 	pathBar.SetHExpand(true)
 
 	pathBar.PathbarBox = gtk.NewBox(gtk.OrientationHorizontal, 0)

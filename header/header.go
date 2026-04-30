@@ -75,3 +75,7 @@ func (h *HeaderBar) HideProgress() {
 func (h *HeaderBar) SetProgress(fraction float64) {
 	h.CircularProgressBar.SetFraction(fraction)
 }
+
+func (h *HeaderBar) SetTitleWidget(widget gtk.Widgetter) {
+	h.HeaderBar.SetTitleWidget(widget)
+}
