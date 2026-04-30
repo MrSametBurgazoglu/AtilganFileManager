@@ -69,7 +69,10 @@ func NewDirPreviewer(path string, changePath func(string), specialPathManager *s
 		folderName:         gtk.NewLabel(""),
 		specialPathManager: specialPathManager,
 	}
-	//viewer.Box.SetVExpand(true)
+	viewer.FileViewerList.SetPropagateNaturalHeight(true)
+	viewer.Box.SetVExpand(true)
+	viewer.Box.SetHExpand(true)
+	viewer.Box.SetVAlign(gtk.AlignFill)
 
 	headerBox := gtk.NewBox(gtk.OrientationHorizontal, 6)
 	headerBox.AddCSSClass("dir-previewer-header")
@@ -150,11 +153,20 @@ func NewDirPreviewer(path string, changePath func(string), specialPathManager *s
 	scrolled := gtk.NewScrolledWindow()
 	scrolled.SetChild(viewer.gridView)
 	scrolled.SetMaxContentHeight(600)
-	scrolled.SetMaxContentWidth(500)
+	scrolled.SetMaxContentWidth(325)
 	scrolled.SetHExpand(false)
 	scrolled.SetVExpand(false)
+	viewer.stack.SetVExpand(true)
+	viewer.stack.SetHExpand(true)
 	viewer.stack.AddTitled(viewer.FileViewerList, "list", "List")
 	viewer.stack.AddTitled(scrolled, "grid", "Grid")
+
+	emptyLabel := gtk.NewLabel("Empty Directory")
+	emptyLabel.AddCSSClass("preview-title")
+	emptyLabel.SetHAlign(gtk.AlignCenter)
+	emptyLabel.SetVAlign(gtk.AlignCenter)
+	viewer.stack.AddTitled(emptyLabel, "empty", "Empty")
+
 	viewer.stack.SetVisibleChildName("list")
 	viewer.Box.Append(viewer.stack)
 
@@ -200,6 +212,15 @@ func (viewer *DirPreviewer) Refresh(newFilter bool) {
 		viewer.FileViewerList.SetItems(items)
 		viewer.folderName.SetText(specialPath.GetName())
 		viewer.folderIcon.SetFromIconName(fileops.GetIconForFolderSymbolic(viewer.Path))
+		if len(items) == 0 {
+			viewer.stack.SetVisibleChildName("empty")
+		} else {
+			if viewer.gridView.Visible() {
+				viewer.stack.SetVisibleChildName("grid")
+			} else {
+				viewer.stack.SetVisibleChildName("list")
+			}
+		}
 		return
 	}
 
@@ -334,6 +355,16 @@ func (viewer *DirPreviewer) Refresh(newFilter bool) {
 	}
 	viewer.FileViewerList.SetItems(newFiles)
 	viewer.folderIcon.SetFromIconName(fileops.GetIconForFolderSymbolic(viewer.Path))
+
+	if len(newFiles) == 0 {
+		viewer.stack.SetVisibleChildName("empty")
+	} else {
+		if viewer.gridView.Visible() {
+			viewer.stack.SetVisibleChildName("grid")
+		} else {
+			viewer.stack.SetVisibleChildName("list")
+		}
+	}
 }
 
 func (viewer *DirPreviewer) UpdateFilterPopover() {

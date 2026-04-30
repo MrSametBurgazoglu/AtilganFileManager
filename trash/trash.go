@@ -53,7 +53,7 @@ type TrashItem struct {
 	DeletionDate string
 }
 
-func getTrashDir() (string, error) {
+func GetTrashDir() (string, error) {
 	xdgDataHome := os.Getenv("XDG_DATA_HOME")
 	if xdgDataHome == "" {
 		home, err := os.UserHomeDir()
@@ -66,7 +66,7 @@ func getTrashDir() (string, error) {
 }
 
 func GetItems() ([]TrashItem, error) {
-	trashDir, err := getTrashDir()
+	trashDir, err := GetTrashDir()
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func GetItems() ([]TrashItem, error) {
 
 func GetItemInfo(fileName string) (*TrashItem, error) {
 
-	trashDir, err := getTrashDir()
+	trashDir, err := GetTrashDir()
 	if err != nil {
 		println(err.Error())
 		return nil, err
@@ -102,6 +102,14 @@ func GetItemInfo(fileName string) (*TrashItem, error) {
 
 	infoPath := filepath.Join(trashDir, "info", fileName+".trashinfo")
 	return parseTrashInfo(infoPath)
+}
+
+func GetTrashFilePath(itemName string) (string, error) {
+	trashDir, err := GetTrashDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(trashDir, "files", itemName), nil
 }
 
 func parseTrashInfo(infoPath string) (*TrashItem, error) {
@@ -158,7 +166,7 @@ func parseTrashInfo(infoPath string) (*TrashItem, error) {
 }
 
 func Restore(itemName string) error {
-	trashDir, err := getTrashDir()
+	trashDir, err := GetTrashDir()
 	if err != nil {
 		return err
 	}

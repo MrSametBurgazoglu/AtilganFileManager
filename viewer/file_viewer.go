@@ -7,11 +7,11 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/MrSametBurgazoglu/atilgan/create_popup"
 	"github.com/MrSametBurgazoglu/atilgan/file_list"
 	"github.com/MrSametBurgazoglu/atilgan/fileops"
 	"github.com/MrSametBurgazoglu/atilgan/special_path"
@@ -56,12 +56,12 @@ type FileViewer struct {
 	FiltersMap         map[string]bool
 	IsCopy             bool
 	IsCut              bool
-	folderIcon         *gtk.Image
-	folderName         *gtk.Label
+	SortButton         *gtk.Button
+	FilterButton       *gtk.MenuButton
 	popover            *gtk.Popover
-	createPopover      *create_popup.CreatePopover
 	FileViewerHistory  map[string]*FileViewHistory
 	FileViewerList     *file_list.FileList
+	stack              *gtk.Stack
 	specialPathManager *special_path.SpecialPathManager
 }
 
@@ -75,19 +75,10 @@ func NewFileViewer(mainWindow *gtk.Window, path string, pathChanged func(string)
 		FileViewerHistory:  make(map[string]*FileViewHistory),
 		FileViewerList:     file_list.NewFileList(true, specialPathManager, mainWindow),
 		DefaultFilters:     []string{"Directories", "Executables", "Hidden"},
-		folderIcon:         gtk.NewImageFromIconName("folder-symbolic"),
-		folderName:         gtk.NewLabel(filepath.Base(path)),
 		specialPathManager: specialPathManager,
 	}
 	viewer.SetVExpand(true)
 	viewer.SetHExpand(true)
-
-	headerBox := gtk.NewBox(gtk.OrientationHorizontal, 6)
-	headerBox.SetMarginStart(6)
-	headerBox.SetMarginEnd(6)
-	headerBox.SetMarginTop(4)
-	headerBox.SetMarginBottom(4)
-	viewer.Box.Append(headerBox)
 
 	searchBar := gtk.NewBox(gtk.OrientationHorizontal, 6)
 	searchBar.SetHExpand(true)
@@ -112,54 +103,31 @@ func NewFileViewer(mainWindow *gtk.Window, path string, pathChanged func(string)
 		viewer.SearchRevealer.SetRevealChild(false)
 	})
 
-	leftBox := gtk.NewBox(gtk.OrientationHorizontal, 8)
-	leftBox.SetHExpand(true)
-	headerBox.Append(leftBox)
-	viewer.folderIcon.SetPixelSize(20)
-	leftBox.Append(viewer.folderIcon)
-	viewer.folderName.AddCSSClass("preview-label") // Reusing preview-label class for bold
-	leftBox.Append(viewer.folderName)
+	viewer.SortButton = gtk.NewButtonFromIconName("view-sort-descending-symbolic")
 
-	rightBox := gtk.NewBox(gtk.OrientationHorizontal, 6)
-	headerBox.Append(rightBox)
-
-	sortButton := gtk.NewButtonFromIconName("view-sort-descending-symbolic")
-
-	newButton := gtk.NewMenuButton()
-	newButton.SetIconName("list-add-symbolic")
-	createPopover := create_popup.NewCreatePopover(mainWindow, pathChanged)
-	viewer.createPopover = createPopover
-	newButton.SetPopover(createPopover)
-
-	terminalButton := gtk.NewButtonFromIconName("utilities-terminal-symbolic")
-	terminalButton.ConnectClicked(func() {
-		// macos cmd := exec.Command("open", "-a", "Terminal", viewer.Path)
-
-		cmd := exec.Command("x-terminal-emulator", "-d", viewer.Path)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
-		err := cmd.Start()
-		if err != nil {
-			fmt.Printf("Error opening Terminal: %v\n", err)
-		}
-	})
-
-	filterButton := gtk.NewMenuButton()
-	filterButton.SetIconName("preferences-system-symbolic")
-	rightBox.Append(newButton)
-	rightBox.Append(terminalButton)
-	rightBox.Append(sortButton)
-	rightBox.Append(filterButton)
+	viewer.FilterButton = gtk.NewMenuButton()
+	viewer.FilterButton.SetIconName("preferences-system-symbolic")
 
 	viewer.popover = gtk.NewPopover()
-	filterButton.SetPopover(viewer.popover)
+	viewer.FilterButton.SetPopover(viewer.popover)
 
 	popoverBox := gtk.NewBox(gtk.OrientationVertical, 6)
 	viewer.popover.SetChild(popoverBox)
-	viewer.Box.Append(viewer.FileViewerList)
 
-	sortButton.ConnectClicked(func() {
+	viewer.stack = gtk.NewStack()
+	viewer.stack.SetVExpand(true)
+	viewer.stack.SetHExpand(true)
+	viewer.stack.AddTitled(viewer.FileViewerList, "list", "List")
+
+	emptyLabel := gtk.NewLabel("Empty Directory")
+	emptyLabel.AddCSSClass("preview-title")
+	emptyLabel.SetHAlign(gtk.AlignCenter)
+	emptyLabel.SetVAlign(gtk.AlignCenter)
+	viewer.stack.AddTitled(emptyLabel, "empty", "Empty")
+
+	viewer.Box.Append(viewer.stack)
+
+	viewer.SortButton.ConnectClicked(func() {
 		if viewer.SortOrder == SortByTime {
 			viewer.SortOrder = SortByName
 		} else {
@@ -175,14 +143,10 @@ func NewFileViewer(mainWindow *gtk.Window, path string, pathChanged func(string)
 
 func (viewer *FileViewer) SetPath(path string) {
 	viewer.Path = path
-	viewer.createPopover.CurrentPath = path
-	viewer.folderName.SetText(filepath.Base(path))
 	viewer.Refresh(true)
 }
 
 func (viewer *FileViewer) SetFolderName(name string) {
-	viewer.folderName.SetText(name)
-	viewer.folderIcon.SetFromIconName(fileops.GetIconForFolderSymbolic(name))
 }
 
 func (viewer *FileViewer) Refresh(newFilter bool) {
@@ -194,7 +158,11 @@ func (viewer *FileViewer) Refresh(newFilter bool) {
 		items := specialPath.GetItems()
 		viewer.FileViewerList.SetItems(items)
 		viewer.SetFolderName(specialPath.GetName())
-		viewer.folderIcon.SetFromIconName(fileops.GetIconForFolderSymbolic(viewer.Path))
+		if len(items) == 0 {
+			viewer.stack.SetVisibleChildName("empty")
+		} else {
+			viewer.stack.SetVisibleChildName("list")
+		}
 		return
 	}
 
@@ -330,8 +298,12 @@ func (viewer *FileViewer) Refresh(newFilter bool) {
 		newFiles = append(newFiles, listItem)
 	}
 	viewer.FileViewerList.SetItems(newFiles)
-	println("this is where I set folder icon")
-	viewer.folderIcon.SetFromIconName(fileops.GetIconForFolderSymbolic(viewer.Path))
+
+	if len(newFiles) == 0 {
+		viewer.stack.SetVisibleChildName("empty")
+	} else {
+		viewer.stack.SetVisibleChildName("list")
+	}
 }
 
 func (viewer *FileViewer) UpdateFilterPopover() {
@@ -476,4 +448,72 @@ func (viewer *FileViewer) ExecuteCopyPaste(progress func(float64)) error {
 	}
 
 	return nil
+}
+
+func (viewer *FileViewer) OpenTerminal() {
+	if viewer.Path == "" {
+		return
+	}
+
+	// Check if it's a real directory
+	info, err := os.Stat(viewer.Path)
+	if err != nil || !info.IsDir() {
+		return
+	}
+
+	if runtime.GOOS == "darwin" {
+		exec.Command("open", "-a", "Terminal", viewer.Path).Start()
+		return
+	}
+
+	if runtime.GOOS == "windows" {
+		exec.Command("cmd", "/c", "start", "cmd.exe", "/K", "cd /d", viewer.Path).Start()
+		return
+	}
+
+	// 1. Check $TERMINAL environment variable
+	if term := os.Getenv("TERMINAL"); term != "" {
+		if _, err := exec.LookPath(term); err == nil {
+			cmd := exec.Command(term)
+			cmd.Dir = viewer.Path
+			if err := cmd.Start(); err == nil {
+				return
+			}
+		}
+	}
+
+	// 2. Linux Defaults & Fallbacks
+	terminals := []struct {
+		name string
+		args []string
+	}{
+		{"xdg-terminal-exec", []string{}},
+		{"x-terminal-emulator", []string{"-d", viewer.Path}},
+		{"gnome-terminal", []string{"--working-directory=" + viewer.Path}},
+		{"konsole", []string{"--workdir", viewer.Path}},
+		{"xfce4-terminal", []string{"--working-directory=" + viewer.Path}},
+		{"lxterminal", []string{"--working-directory=" + viewer.Path}},
+		{"mate-terminal", []string{"--working-directory=" + viewer.Path}},
+		{"alacritty", []string{"--working-directory", viewer.Path}},
+		{"kitty", []string{"--directory", viewer.Path}},
+		{"terminology", []string{"-d", viewer.Path}},
+		{"xterm", []string{"-e", "cd " + viewer.Path + " && exec bash"}},
+	}
+
+	for _, t := range terminals {
+		if _, err := exec.LookPath(t.name); err == nil {
+			var cmd *exec.Cmd
+			if t.name == "xdg-terminal-exec" {
+				cmd = exec.Command(t.name)
+				cmd.Dir = viewer.Path
+			} else {
+				cmd = exec.Command(t.name, t.args...)
+			}
+
+			if err := cmd.Start(); err == nil {
+				return
+			}
+		}
+	}
+	fmt.Printf("No terminal emulator found for path: %s\n", viewer.Path)
 }

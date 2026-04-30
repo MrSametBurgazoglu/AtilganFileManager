@@ -6,6 +6,8 @@ import (
 
 type HeaderBar struct {
 	*gtk.HeaderBar
+	NewButton            *gtk.MenuButton
+	TerminalButton       *gtk.Button
 	ShortcutsButton      *gtk.Button
 	SearchButton         *gtk.Button
 	PreviewerPanelButton *gtk.Button
@@ -44,8 +46,17 @@ func NewHeaderBar(mainWindow *gtk.ApplicationWindow) *HeaderBar {
 	previewerPanelButton := gtk.NewButtonFromIconName("view-reveal-symbolic")
 	headerBar.PackEnd(previewerPanelButton)
 
+	terminalButton := gtk.NewButtonFromIconName("utilities-terminal-symbolic")
+	headerBar.PackEnd(terminalButton)
+
+	newButton := gtk.NewMenuButton()
+	newButton.SetIconName("list-add-symbolic")
+	headerBar.PackEnd(newButton)
+
 	return &HeaderBar{
 		HeaderBar:            headerBar,
+		NewButton:            newButton,
+		TerminalButton:       terminalButton,
 		ShortcutsButton:      shortcutsButton,
 		SearchButton:         searchButton,
 		CircularProgressBar:  circularProgressBar,

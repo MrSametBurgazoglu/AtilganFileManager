@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/MrSametBurgazoglu/atilgan/clipboard"
+	"github.com/MrSametBurgazoglu/atilgan/create_popup"
 	"github.com/MrSametBurgazoglu/atilgan/header"
 	"github.com/MrSametBurgazoglu/atilgan/pathbar"
 	"github.com/MrSametBurgazoglu/atilgan/previewer"
@@ -35,6 +36,7 @@ type MainBox struct {
 	SpecialPaths   *special_path.SpecialPathManager
 	Search         *search.Search
 	SideBar        *sidebar.Sidebar
+	CreatePopover  *create_popup.CreatePopover
 }
 
 func NewMainBox(mainWindow *gtk.Window, headerBar *header.HeaderBar) *MainBox {
@@ -46,20 +48,19 @@ func NewMainBox(mainWindow *gtk.Window, headerBar *header.HeaderBar) *MainBox {
 		panic(err)
 	}
 
+	mainBox.CreatePopover = create_popup.NewCreatePopover(mainWindow, mainBox.pathChanged)
+	mainBox.CreatePopover.CurrentPath = curdir
+	headerBar.NewButton.SetPopover(mainBox.CreatePopover.Popover)
+
+	headerBar.TerminalButton.ConnectClicked(func() {
+		mainBox.ViewerPanel.FileViewer.OpenTerminal()
+	})
+
 	headerBar.SearchButton.ConnectClicked(func() {
 		mainBox.Search.SetVisible(!mainBox.Search.Visible())
 	})
 	headerBar.ShortcutsButton.ConnectClicked(func() {
 		shortcut_popup.NewShortcutPopup(mainWindow)
-	})
-
-	headerBar.PreviewerPanelButton.ConnectClicked(func() {
-		mainBox.PreviewerPanel.SetVisible(!mainBox.PreviewerPanel.Visible())
-		if mainBox.PreviewerPanel.Visible() {
-			mainBox.ViewerPanel.SetHExpand(false)
-		} else {
-			mainBox.ViewerPanel.SetHExpand(true)
-		}
 	})
 
 	mainBox.SpecialPaths, err = special_path.NewSpecialPathManager()
@@ -94,21 +95,44 @@ func NewMainBox(mainWindow *gtk.Window, headerBar *header.HeaderBar) *MainBox {
 	contentPaned := gtk.NewPaned(gtk.OrientationHorizontal)
 	contentPaned.SetHExpand(true)
 	contentPaned.SetVExpand(true)
-	contentPaned.SetPosition(500)
+	contentPaned.SetPosition(800)
 	contentPaned.SetWideHandle(true)
 	mainPaned.SetEndChild(contentPaned)
 
 	mainBox.ViewerPanel = viewer_panel.NewPanel(mainWindow, curdir, mainBox.pathChanged, mainBox.SpecialPaths)
-	mainBox.ViewerPanel.FileViewer.Box.Prepend(mainBox.Pathbar)
+
+	topBarBox := gtk.NewBox(gtk.OrientationHorizontal, 0)
+	topBarBox.SetMarginStart(12)
+	topBarBox.SetMarginEnd(12)
+	topBarBox.SetMarginTop(4)
+	topBarBox.SetMarginBottom(4)
+	mainBox.Pathbar.SetVAlign(gtk.AlignCenter)
+	mainBox.Pathbar.SetHExpand(true)
+	topBarBox.Append(mainBox.Pathbar)
+
+	buttonBox := gtk.NewBox(gtk.OrientationHorizontal, 6)
+	mainBox.ViewerPanel.FileViewer.SortButton.SetVAlign(gtk.AlignCenter)
+	mainBox.ViewerPanel.FileViewer.SortButton.SetVExpand(false)
+	mainBox.ViewerPanel.FileViewer.FilterButton.SetVAlign(gtk.AlignCenter)
+	mainBox.ViewerPanel.FileViewer.FilterButton.SetVExpand(false)
+	buttonBox.Append(mainBox.ViewerPanel.FileViewer.SortButton)
+	buttonBox.Append(mainBox.ViewerPanel.FileViewer.FilterButton)
+	topBarBox.Append(buttonBox)
+
+	mainBox.ViewerPanel.FileViewer.Box.Prepend(topBarBox)
 	mainBox.ViewerPanel.SetHExpand(true)
 	mainBox.ViewerPanel.SetVExpand(true)
 	mainBox.ViewerPanel.SetSizeRequest(300, -1)
 	contentPaned.SetStartChild(mainBox.ViewerPanel)
+	contentPaned.SetResizeStartChild(true)
+	contentPaned.SetShrinkStartChild(false)
+	contentPaned.SetResizeEndChild(true)
+	contentPaned.SetShrinkEndChild(false)
 
 	rightBox := gtk.NewBox(gtk.OrientationVertical, 0)
-	rightBox.SetHExpand(true)
+	rightBox.SetHExpand(false)
 	rightBox.SetVExpand(true)
-	rightBox.SetSizeRequest(200, -1)
+	rightBox.SetSizeRequest(215, -1)
 	contentPaned.SetEndChild(rightBox)
 
 	mainBox.PreviewerPanel = previewer_panel.NewPreviewPanel(curdir, mainBox.pathChanged, mainBox.SpecialPaths)
@@ -122,11 +146,12 @@ func NewMainBox(mainWindow *gtk.Window, headerBar *header.HeaderBar) *MainBox {
 		isVisible := !mainBox.PreviewerPanel.Visible()
 		mainBox.PreviewerPanel.SetVisible(isVisible)
 		rightBox.SetVisible(isVisible)
+		w, h := mainWindow.Width(), mainWindow.Height()
 		if isVisible {
-			mainBox.ViewerPanel.SetHExpand(false)
-			contentPaned.SetPosition(500)
+			contentPaned.SetPosition(800)
+			mainWindow.SetDefaultSize(w+215, h)
 		} else {
-			mainBox.ViewerPanel.SetHExpand(true)
+			mainWindow.SetDefaultSize(w-215, h)
 		}
 	})
 
@@ -368,6 +393,7 @@ func (m *MainBox) pathChanged(path string) {
 	m.updatePreviewer()
 	m.Pathbar.UpdatePathBar(path)
 	m.SideBar.SetPath(path)
+	m.CreatePopover.CurrentPath = path
 }
 
 func (m *MainBox) updatePreviewer() {

@@ -38,8 +38,8 @@ func NewCodePreviewer() *CodePreviewer {
 
 	searchBar := gtk.NewBox(gtk.OrientationHorizontal, 6)
 	searchEntry := gtk.NewSearchEntry()
-	prevButton := gtk.NewButtonWithLabel("Previous")
-	nextButton := gtk.NewButtonWithLabel("Next")
+	prevButton := gtk.NewButtonFromIconName("go-up-symbolic")
+	nextButton := gtk.NewButtonFromIconName("go-down-symbolic")
 	matchCountLabel := gtk.NewLabel("")
 	searchBar.Append(searchEntry)
 	searchBar.Append(prevButton)

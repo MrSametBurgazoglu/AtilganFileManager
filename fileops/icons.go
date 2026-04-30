@@ -81,3 +81,45 @@ func GetIconForFolder(folderPath string) string {
 	}
 	return "folder" // Default icon
 }
+
+var fileDescriptions = map[string]string{
+	".go":   "Go Source File",
+	".py":   "Python Script",
+	".js":   "JavaScript File",
+	".ts":   "TypeScript File",
+	".json": "JSON Data",
+	".md":   "Markdown Document",
+	".txt":  "Plain Text File",
+	".pdf":  "PDF Document",
+	".png":  "PNG Image",
+	".jpg":  "JPEG Image",
+	".jpeg": "JPEG Image",
+	".gif":  "GIF Image",
+	".svg":  "SVG Image",
+	".webp": "WebP Image",
+	".zip":  "ZIP Archive",
+	".gz":   "Gzip Archive",
+	".tar":  "Tar Archive",
+	".rar":  "RAR Archive",
+	".mp3":  "MP3 Audio",
+	".ogg":  "Ogg Audio",
+	".wav":  "WAV Audio",
+	".mp4":  "MP4 Video",
+	".mkv":  "Matroska Video",
+	".mov":  "QuickTime Video",
+	".avi":  "AVI Video",
+	".html": "HTML Document",
+	".css":  "CSS Stylesheet",
+	".sh":   "Shell Script",
+}
+
+func GetFileDescription(fileName string) string {
+	ext := strings.ToLower(filepath.Ext(fileName))
+	if desc, ok := fileDescriptions[ext]; ok {
+		return desc
+	}
+	if ext == "" {
+		return "Binary/Executable"
+	}
+	return strings.ToUpper(strings.TrimPrefix(ext, ".")) + " File"
+}

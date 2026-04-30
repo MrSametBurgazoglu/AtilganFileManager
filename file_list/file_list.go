@@ -11,9 +11,11 @@ import (
 	"github.com/MrSametBurgazoglu/atilgan/special_path"
 	"github.com/MrSametBurgazoglu/atilgan/tag_popup"
 	"github.com/MrSametBurgazoglu/atilgan/theme"
+	"github.com/MrSametBurgazoglu/atilgan/thumbnail"
 	"github.com/MrSametBurgazoglu/atilgan/types"
 	"github.com/diamondburned/gotk4/pkg/cairo"
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
+	"github.com/diamondburned/gotk4/pkg/gdkpixbuf/v2"
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
@@ -38,6 +40,7 @@ type FileList struct {
 	themeConfig        *theme.SpacingConfig
 	specialPathManager *special_path.SpecialPathManager
 	parent             *gtk.Window
+	textureCache       map[string]*gdk.Texture
 
 	SelectionChanged func(index int)
 	PathChanged      func(path string)
@@ -57,17 +60,20 @@ func NewFileList(canSelect bool, specialPathManager *special_path.SpecialPathMan
 		themeConfig:        theme.NewTheme(),
 		specialPathManager: specialPathManager,
 		parent:             parent,
+		textureCache:       make(map[string]*gdk.Texture),
 	}
 
+	fl.DrawingArea.SetHExpand(true)
 	fl.DrawingArea.SetDrawFunc(fl.onDraw)
 
 	fl.SetChild(fl.DrawingArea)
 	fl.SetVExpand(true)
+	fl.SetHExpand(true)
 
-	fl.SetMinContentWidth(500)
-	fl.SetMarginStart(8)
-	fl.SetMarginEnd(8)
-	fl.SetPolicy(gtk.PolicyAlways, gtk.PolicyAlways)
+	fl.SetMinContentWidth(200)
+	fl.SetMarginStart(0)
+	fl.SetMarginEnd(0)
+	fl.SetPolicy(gtk.PolicyAutomatic, gtk.PolicyAlways)
 
 	if canSelect {
 		key := gtk.NewEventControllerKey()
@@ -154,6 +160,7 @@ func NewFileList(canSelect bool, specialPathManager *special_path.SpecialPathMan
 func (fl *FileList) SetItems(items []*types.ListItem) {
 	fl.Items = items
 	fl.SelectedIDX = 0
+	fl.textureCache = make(map[string]*gdk.Texture)
 	fl.DrawingArea.QueueDraw()
 }
 
@@ -282,27 +289,49 @@ func (fl *FileList) drawRow(cr *cairo.Context, idx int, item *types.ListItem, y 
 	}
 
 	iconSize := 16
-	iconName := fileops.GetIconForFile(item.Name)
-	if item.IsDir {
-		iconName = fileops.GetIconForFolder(item.Path)
+	var texture *gdk.Texture
+
+	if !item.IsDir {
+		if cached, ok := fl.textureCache[item.Path]; ok {
+			texture = cached
+		} else {
+			texture, _ = thumbnail.Generate(item.Path)
+			fl.textureCache[item.Path] = texture
+		}
 	}
 
-	paintable := fl.iconTheme.LookupIcon(iconName, nil, iconSize, 1, gtk.TextDirNone, 0)
-	if paintable == nil && item.IsDir {
-		paintable = fl.iconTheme.LookupIcon("folder", nil, iconSize, 1, gtk.TextDirNone, 0)
-	}
-	if paintable == nil && !item.IsDir {
-		paintable = fl.iconTheme.LookupIcon("text-x-generic", nil, iconSize, 1, gtk.TextDirNone, 0)
-	}
-	if paintable != nil {
-		file := paintable.File()
-		if file != nil {
-			texture, err := gdk.NewTextureFromFile(file)
-			if err == nil {
-				pixbuf := gdk.PixbufGetFromTexture(texture)
-				if pixbuf != nil {
-					gdk.CairoSetSourcePixbuf(cr, pixbuf, 12, float64(y+(rowHeight-iconSize)/2))
-					cr.Paint()
+	if texture != nil {
+		pixbuf := gdk.PixbufGetFromTexture(texture)
+		if pixbuf != nil {
+			if pixbuf.Width() != iconSize || pixbuf.Height() != iconSize {
+				pixbuf = pixbuf.ScaleSimple(iconSize, iconSize, gdkpixbuf.InterpBilinear)
+			}
+			gdk.CairoSetSourcePixbuf(cr, pixbuf, 12, float64(y+(rowHeight-iconSize)/2))
+			cr.Paint()
+		}
+	} else {
+		iconName := fileops.GetIconForFile(item.Name)
+		if item.IsDir {
+			iconName = fileops.GetIconForFolder(item.Path)
+		}
+
+		paintable := fl.iconTheme.LookupIcon(iconName, nil, iconSize, 1, gtk.TextDirNone, 0)
+		if paintable == nil && item.IsDir {
+			paintable = fl.iconTheme.LookupIcon("folder", nil, iconSize, 1, gtk.TextDirNone, 0)
+		}
+		if paintable == nil && !item.IsDir {
+			paintable = fl.iconTheme.LookupIcon("text-x-generic", nil, iconSize, 1, gtk.TextDirNone, 0)
+		}
+		if paintable != nil {
+			file := paintable.File()
+			if file != nil {
+				texture, err := gdk.NewTextureFromFile(file)
+				if err == nil {
+					pixbuf := gdk.PixbufGetFromTexture(texture)
+					if pixbuf != nil {
+						gdk.CairoSetSourcePixbuf(cr, pixbuf, 12, float64(y+(rowHeight-iconSize)/2))
+						cr.Paint()
+					}
 				}
 			}
 		}

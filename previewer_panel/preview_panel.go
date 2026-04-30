@@ -40,6 +40,9 @@ func NewPreviewPanel(path string, changePath func(string), specialPathManager *s
 	pp.SetHExpand(true)
 
 	emptyPreviewer := gtk.NewLabel("Empty Directory")
+	emptyPreviewer.AddCSSClass("preview-title")
+	emptyPreviewer.SetHAlign(gtk.AlignCenter)
+	emptyPreviewer.SetVAlign(gtk.AlignCenter)
 
 	pp.AddTitled(emptyPreviewer, "emptypreviewer", "Empty Previewer")
 	pp.AddTitled(pp.dirPreviewer, "dirviewer", "Directory Viewer")

@@ -9,14 +9,48 @@ window {
     color: #cdd6f4;
 }
 
-headerbar {
+headerbar, .headerbar {
     background-color: #181825;
+    background-image: none;
     border-bottom: 1px solid #313244;
     padding: 6px;
 }
 
+/* Global Button & MenuButton resets for transparency and dark theme */
+button, 
+menubutton {
+    background-color: transparent;
+    color: #cdd6f4;
+    border: none;
+    box-shadow: none;
+    background-image: none;
+    padding: 6px;
+    transition: background-color 0.2s;
+}
+
+button:hover,
+menubutton:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+button:active,
+menubutton:active {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+button:backdrop,
+menubutton:backdrop {
+    background-color: transparent;
+    color: #a6adc8;
+}
+
 /* Rounded corners for everything */
-button, entry, popover > box, .path-bar, .sidebar-button {
+button, 
+menubutton,
+entry, 
+popover > box, 
+.path-bar, 
+.sidebar-button {
     border-radius: 8px;
 }
 
@@ -27,16 +61,13 @@ button, entry, popover > box, .path-bar, .sidebar-button {
 }
 
 .path-bar button {
-    background: none;
-    border: none;
-    box-shadow: none;
     padding: 4px 8px;
     color: #bac2de;
-    transition: background-color 0.2s;
 }
 
-.path-bar button:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+.path-bar button label {
+    text-overflow: ellipsis;
+    overflow: hidden;
 }
 
 .path-bar button:checked, .path-bar button.selected {
@@ -60,21 +91,6 @@ button, entry, popover > box, .path-bar, .sidebar-button {
     border-color: @accent_bg_color;
 }
 
-button {
-    background-color: transparent;
-    border: none;
-    padding: 6px;
-    transition: background-color 0.2s;
-}
-
-button:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-}
-
-button:active {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
 /* Sidebar styling */
 .sidebar {
     background-color: #11111b;
@@ -87,10 +103,6 @@ button:active {
     color: #bac2de;
     min-width: 40px;
     min-height: 40px;
-}
-
-.sidebar-button:hover {
-    background-color: rgba(255, 255, 255, 0.05);
 }
 
 .sidebar-button.selected {
@@ -118,7 +130,12 @@ scrolledwindow {
 
 .preview-panel {
     background-color: #181825;
-    padding: 16px;
+    padding: 8px;
+}
+
+.viewer-panel {
+    background-color: #1e1e2e;
+    padding: 0px;
 }
 
 scrollbar slider {
@@ -136,15 +153,28 @@ popover > box {
     padding: 8px;
 }
 
-.preview-label {
-    font-size: 1.1em;
-    font-weight: bold;
-    color: @accent_bg_color;
+.preview-info-box {
+    background-color: #11111b; /* Darker than panel bg to create a card effect */
+    border-radius: 12px;
+    border: 1px solid #313244;
+    padding: 16px;
+    margin-top: 8px;
 }
 
-.preview-info-box {
-    background-color: #181825;
-    border-radius: 10px;
-    border: 1px solid #313244;
-    padding: 12px;
+.preview-title {
+    font-size: 1.4em;
+    font-weight: bold;
+    color: #cdd6f4;
+    margin-bottom: 8px;
+}
+
+.preview-label-title {
+    font-size: 0.95em;
+    color: #a6adc8;
+}
+
+.preview-label-value {
+    font-size: 0.95em;
+    color: @accent_bg_color;
+    font-weight: 500;
 }

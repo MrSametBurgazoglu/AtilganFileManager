@@ -5,12 +5,14 @@ import (
 	"strings"
 
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
+	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
 
 type PathBar struct {
 	*gtk.Stack
 	PathbarBox      *gtk.Box
+	ScrolledWindow  *gtk.ScrolledWindow
 	PathBarEntryBox *PathBarEntryBox
 	currentPath     string
 	previousPath    string
@@ -45,12 +47,18 @@ func NewPathBar(setPath func(string)) *PathBar {
 	}
 
 	pathBar.SetPath = setPath
-	pathBar.SetHAlign(gtk.AlignStart)
+	pathBar.SetHAlign(gtk.AlignFill)
 	pathBar.SetHExpand(true)
 
 	pathBar.PathbarBox = gtk.NewBox(gtk.OrientationHorizontal, 0)
 	pathBar.PathbarBox.AddCSSClass("path-bar")
-	pathBar.AddTitled(pathBar.PathbarBox, "pathbar", "Path Bar")
+	
+	pathBar.ScrolledWindow = gtk.NewScrolledWindow()
+	pathBar.ScrolledWindow.SetPolicy(gtk.PolicyAutomatic, gtk.PolicyNever)
+	pathBar.ScrolledWindow.SetChild(pathBar.PathbarBox)
+	pathBar.ScrolledWindow.SetPropagateNaturalWidth(true)
+
+	pathBar.AddTitled(pathBar.ScrolledWindow, "pathbar", "Path Bar")
 
 	pathBar.PathBarEntryBox = NewPathBarEntryBox()
 	pathBar.AddTitled(pathBar.PathBarEntryBox, "pathentry", "Path Entry")
@@ -123,4 +131,9 @@ func (pb *PathBar) UpdatePathBar(path string) {
 		}
 	}
 	pb.SetVisibleChildName("pathbar")
+
+	glib.IdleAdd(func() {
+		adj := pb.ScrolledWindow.HAdjustment()
+		adj.SetValue(adj.Upper() - adj.PageSize())
+	})
 }

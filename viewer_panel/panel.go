@@ -18,7 +18,7 @@ func NewPanel(mainWindow *gtk.Window, path string, pathChanged func(string), spe
 		Path:       path,
 		FileViewer: viewer.NewFileViewer(mainWindow, path, pathChanged, specialPathManager),
 	}
-	panel.Box.AddCSSClass("preview-panel")
+	panel.Box.AddCSSClass("viewer-panel")
 	panel.SetHExpand(true)
 	panel.Append(panel.FileViewer)
 	return panel
