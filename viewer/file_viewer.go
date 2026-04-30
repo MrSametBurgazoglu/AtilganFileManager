@@ -56,9 +56,7 @@ type FileViewer struct {
 	FiltersMap         map[string]bool
 	IsCopy             bool
 	IsCut              bool
-	SortButton         *gtk.Button
-	FilterButton       *gtk.MenuButton
-	popover            *gtk.Popover
+	FilterBox          *gtk.Box
 	FileViewerHistory  map[string]*FileViewHistory
 	FileViewerList     *file_list.FileList
 	stack              *gtk.Stack
@@ -76,6 +74,7 @@ func NewFileViewer(mainWindow *gtk.Window, path string, pathChanged func(string)
 		FileViewerList:     file_list.NewFileList(true, specialPathManager, mainWindow),
 		DefaultFilters:     []string{"Directories", "Executables", "Hidden"},
 		specialPathManager: specialPathManager,
+		FilterBox:          gtk.NewBox(gtk.OrientationVertical, 6),
 	}
 	viewer.SetVExpand(true)
 	viewer.SetHExpand(true)
@@ -103,17 +102,6 @@ func NewFileViewer(mainWindow *gtk.Window, path string, pathChanged func(string)
 		viewer.SearchRevealer.SetRevealChild(false)
 	})
 
-	viewer.SortButton = gtk.NewButtonFromIconName("view-sort-descending-symbolic")
-
-	viewer.FilterButton = gtk.NewMenuButton()
-	viewer.FilterButton.SetIconName("preferences-system-symbolic")
-
-	viewer.popover = gtk.NewPopover()
-	viewer.FilterButton.SetPopover(viewer.popover)
-
-	popoverBox := gtk.NewBox(gtk.OrientationVertical, 6)
-	viewer.popover.SetChild(popoverBox)
-
 	viewer.stack = gtk.NewStack()
 	viewer.stack.SetVExpand(true)
 	viewer.stack.SetHExpand(true)
@@ -126,15 +114,6 @@ func NewFileViewer(mainWindow *gtk.Window, path string, pathChanged func(string)
 	viewer.stack.AddTitled(emptyLabel, "empty", "Empty")
 
 	viewer.Box.Append(viewer.stack)
-
-	viewer.SortButton.ConnectClicked(func() {
-		if viewer.SortOrder == SortByTime {
-			viewer.SortOrder = SortByName
-		} else {
-			viewer.SortOrder = SortByTime
-		}
-		viewer.Refresh(false)
-	})
 
 	viewer.Refresh(true)
 
@@ -307,7 +286,7 @@ func (viewer *FileViewer) Refresh(newFilter bool) {
 }
 
 func (viewer *FileViewer) UpdateFilterPopover() {
-	popoverBox := viewer.popover.Child().(*gtk.Box)
+	popoverBox := viewer.FilterBox
 	for child := popoverBox.FirstChild(); child != nil; child = popoverBox.FirstChild() {
 		popoverBox.Remove(child)
 	}

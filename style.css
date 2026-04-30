@@ -14,6 +14,7 @@ headerbar, .headerbar {
     background-image: none;
     border-bottom: 1px solid #313244;
     padding: 6px;
+    min-height: 52px;
 }
 
 .left-header {

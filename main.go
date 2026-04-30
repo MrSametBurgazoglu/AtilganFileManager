@@ -18,6 +18,7 @@ import (
 	"github.com/MrSametBurgazoglu/atilgan/special_path"
 	"github.com/MrSametBurgazoglu/atilgan/viewer"
 	"github.com/MrSametBurgazoglu/atilgan/viewer_panel"
+	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
@@ -28,7 +29,7 @@ import (
 var styleCSS embed.FS
 
 type MainBox struct {
-	*gtk.Box
+	*adw.NavigationSplitView
 	Path           string
 	Pathbar        *pathbar.PathBar
 	PreviewerPanel *previewer_panel.PreviewPanel
@@ -36,31 +37,24 @@ type MainBox struct {
 	SpecialPaths   *special_path.SpecialPathManager
 	Search         *search.Search
 	SideBar        *sidebar.Sidebar
-	CreatePopover  *create_popup.CreatePopover
 }
 
-func NewMainBox(mainWindow *gtk.Window, headerBar *header.HeaderBar) *MainBox {
-	mainVBox := gtk.NewBox(gtk.OrientationVertical, 0)
-	mainBox := &MainBox{Box: mainVBox}
+func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) *MainBox {
+	splitView := adw.NewNavigationSplitView()
+	splitView.SetMaxSidebarWidth(250)
+	splitView.SetSidebarWidthFraction(0.22)
+	mainBox := &MainBox{NavigationSplitView: splitView}
 
 	curdir, err := os.Getwd()
 	if err != nil {
 		panic(err)
 	}
 
-	mainBox.CreatePopover = create_popup.NewCreatePopover(mainWindow, mainBox.pathChanged)
-	mainBox.CreatePopover.CurrentPath = curdir
-	headerBar.NewButton.SetPopover(mainBox.CreatePopover.Popover)
-
-	headerBar.TerminalButton.ConnectClicked(func() {
-		mainBox.ViewerPanel.FileViewer.OpenTerminal()
-	})
-
 	headerBar.SearchButton.ConnectClicked(func() {
 		mainBox.Search.SetVisible(!mainBox.Search.Visible())
 	})
 	headerBar.ShortcutsButton.ConnectClicked(func() {
-		shortcut_popup.NewShortcutPopup(mainWindow)
+		shortcut_popup.NewShortcutPopup(&mainWindow.Window)
 	})
 
 	mainBox.SpecialPaths, err = special_path.NewSpecialPathManager()
@@ -75,39 +69,44 @@ func NewMainBox(mainWindow *gtk.Window, headerBar *header.HeaderBar) *MainBox {
 	mainBox.Search = search.NewSearch(curdir)
 	mainBox.Search.SetVisible(false)
 	mainBox.Search.PathChanged = mainBox.pathChanged
-	mainVBox.Append(mainBox.Search)
-
-	mainPaned := gtk.NewPaned(gtk.OrientationHorizontal)
-	mainPaned.SetVExpand(true)
-	mainPaned.SetHExpand(true)
-	mainPaned.SetPosition(200)
-	mainPaned.SetWideHandle(true)
-	mainVBox.Append(mainPaned)
-
-	mainPaned.NotifyProperty("position", func() {
-		headerBar.LeftHeader.SetSizeRequest(mainPaned.Position(), -1)
-	})
-	headerBar.LeftHeader.SetSizeRequest(mainPaned.Position(), -1)
 
 	mainBox.SideBar = sidebar.NewSidebar(mainBox.pathChanged)
 	mainBox.SideBar.SetOrientation(gtk.OrientationVertical)
 	mainBox.SideBar.SetHExpand(true)
 	mainBox.SideBar.SetHAlign(gtk.AlignFill)
-	mainPaned.SetStartChild(mainBox.SideBar)
-	mainPaned.SetResizeStartChild(false)
+
+	sidebarToolbar := adw.NewToolbarView()
+	sidebarToolbar.AddTopBar(headerBar.LeftHeader)
+	
+	sidebarScrolled := gtk.NewScrolledWindow()
+	sidebarScrolled.SetChild(mainBox.SideBar)
+	sidebarScrolled.SetPolicy(gtk.PolicyNever, gtk.PolicyAutomatic)
+	sidebarToolbar.SetContent(sidebarScrolled)
+
+	sidebarPage := adw.NewNavigationPage(sidebarToolbar, "Sidebar")
+	splitView.SetSidebar(sidebarPage)
+
+	contentToolbar := adw.NewToolbarView()
+	contentToolbar.AddTopBar(headerBar.RightHeader)
+
+	contentVBox := gtk.NewBox(gtk.OrientationVertical, 0)
+	contentVBox.Append(mainBox.Search)
 
 	contentPaned := gtk.NewPaned(gtk.OrientationHorizontal)
 	contentPaned.SetHExpand(true)
 	contentPaned.SetVExpand(true)
 	contentPaned.SetPosition(800)
 	contentPaned.SetWideHandle(true)
-	mainPaned.SetEndChild(contentPaned)
+	contentVBox.Append(contentPaned)
+	
+	contentToolbar.SetContent(contentVBox)
 
-	mainBox.ViewerPanel = viewer_panel.NewPanel(mainWindow, curdir, mainBox.pathChanged, mainBox.SpecialPaths)
+	contentPage := adw.NewNavigationPage(contentToolbar, "Content")
+	splitView.SetContent(contentPage)
+
+	mainBox.ViewerPanel = viewer_panel.NewPanel(&mainWindow.Window, curdir, mainBox.pathChanged, mainBox.SpecialPaths)
 
 	headerBar.PackStart(mainBox.Pathbar)
-	headerBar.RightHeader.PackEnd(mainBox.ViewerPanel.FileViewer.SortButton)
-	headerBar.RightHeader.PackEnd(mainBox.ViewerPanel.FileViewer.FilterButton)
 
 	mainBox.ViewerPanel.SetHExpand(true)
 	mainBox.ViewerPanel.SetVExpand(true)
@@ -131,7 +130,7 @@ func NewMainBox(mainWindow *gtk.Window, headerBar *header.HeaderBar) *MainBox {
 	copyCutPreviewer.SetVisible(false)
 	rightBox.Append(copyCutPreviewer)
 
-	headerBar.PreviewerPanelButton.ConnectClicked(func() {
+	togglePreviewer := func() {
 		isVisible := !mainBox.PreviewerPanel.Visible()
 		mainBox.PreviewerPanel.SetVisible(isVisible)
 		rightBox.SetVisible(isVisible)
@@ -142,7 +141,9 @@ func NewMainBox(mainWindow *gtk.Window, headerBar *header.HeaderBar) *MainBox {
 		} else {
 			mainWindow.SetDefaultSize(w-215, h)
 		}
-	})
+	}
+
+	mainBox.setupActionsMenu(mainWindow, headerBar, togglePreviewer)
 
 	mainBox.ViewerPanel.FileViewer.FileViewerList.SelectionChanged = func(index int) {
 		mainBox.updatePreviewer()
@@ -174,7 +175,7 @@ func NewMainBox(mainWindow *gtk.Window, headerBar *header.HeaderBar) *MainBox {
 	renameShortcut := gtk.NewShortcut(renameTrigger, gtk.NewCallbackAction(func(widget gtk.Widgetter, args *glib.Variant) (ok bool) {
 		selectedItem := mainBox.ViewerPanel.FileViewer.FileViewerList.Items[mainBox.ViewerPanel.FileViewer.FileViewerList.SelectedIDX]
 		renameWindow := rename_popup.NewRenameWindow(mainBox.Path, selectedItem.Path)
-		renameWindow.SetTransientFor(mainWindow)
+		renameWindow.SetTransientFor(&mainWindow.Window)
 		renameWindow.SetVisible(true)
 		return true
 	}))
@@ -269,7 +270,7 @@ func NewMainBox(mainWindow *gtk.Window, headerBar *header.HeaderBar) *MainBox {
 
 	helpTrigger := gtk.NewKeyvalTrigger(gdk.KEY_h, gdk.ControlMask)
 	helpShortcut := gtk.NewShortcut(helpTrigger, gtk.NewCallbackAction(func(widget gtk.Widgetter, args *glib.Variant) (ok bool) {
-		shortcut_popup.NewShortcutPopup(mainWindow)
+		shortcut_popup.NewShortcutPopup(&mainWindow.Window)
 		return true
 	}))
 	controller.AddShortcut(helpShortcut)
@@ -318,7 +319,7 @@ func NewMainBox(mainWindow *gtk.Window, headerBar *header.HeaderBar) *MainBox {
 	return mainBox
 }
 func main() {
-	app := gtk.NewApplication("com.github.mrsametburgazoglu.atilgan", 0)
+	app := adw.NewApplication("com.github.mrsametburgazoglu.atilgan", gio.ApplicationFlagsNone)
 	app.ConnectActivate(func() {
 		activate(app)
 	})
@@ -327,8 +328,8 @@ func main() {
 	}
 }
 
-func activate(app *gtk.Application) {
-	window := gtk.NewApplicationWindow(app)
+func activate(app *adw.Application) {
+	window := adw.NewApplicationWindow(&app.Application)
 	window.SetTitle("Atilgan")
 	window.SetDefaultSize(1200, 700)
 
@@ -355,9 +356,8 @@ func activate(app *gtk.Application) {
 	window.SetIconName("atilgan_icon")
 
 	headerBar := header.NewHeaderBar(window)
-	mainBox := NewMainBox(&window.Window, headerBar)
-	window.SetTitlebar(headerBar)
-	window.SetChild(mainBox)
+	mainBox := NewMainBox(window, headerBar)
+	window.SetContent(mainBox)
 
 	window.SetVisible(true)
 	mainBox.ViewerPanel.FileViewer.FileViewerList.DrawingArea.GrabFocus()
@@ -382,7 +382,6 @@ func (m *MainBox) pathChanged(path string) {
 	m.updatePreviewer()
 	m.Pathbar.UpdatePathBar(path)
 	m.SideBar.SetPath(path)
-	m.CreatePopover.CurrentPath = path
 }
 
 func (m *MainBox) updatePreviewer() {
@@ -392,4 +391,97 @@ func (m *MainBox) updatePreviewer() {
 	}
 	selected := m.ViewerPanel.FileViewer.FileViewerList.Items[m.ViewerPanel.FileViewer.FileViewerList.SelectedIDX]
 	m.PreviewerPanel.Update(selected.Path)
+}
+
+func (m *MainBox) setupActionsMenu(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar, togglePreviewer func()) {
+	actionsPopover := gtk.NewPopover()
+	headerBar.ActionsButton.SetPopover(actionsPopover)
+
+	actionsBox := gtk.NewBox(gtk.OrientationVertical, 6)
+	actionsBox.SetMarginTop(8)
+	actionsBox.SetMarginBottom(8)
+	actionsBox.SetMarginStart(8)
+	actionsBox.SetMarginEnd(8)
+	actionsPopover.SetChild(actionsBox)
+
+	createActionBtn := func(iconName, labelText string, action func()) *gtk.Button {
+		btn := gtk.NewButton()
+		btn.AddCSSClass("flat")
+		
+		btnBox := gtk.NewBox(gtk.OrientationHorizontal, 8)
+		icon := gtk.NewImageFromIconName(iconName)
+		label := gtk.NewLabel(labelText)
+		label.SetHAlign(gtk.AlignStart)
+		
+		btnBox.Append(icon)
+		btnBox.Append(label)
+		btn.SetChild(btnBox)
+		
+		btn.ConnectClicked(func() {
+			action()
+			actionsPopover.Popdown()
+		})
+		return btn
+	}
+
+	actionsLabel := gtk.NewLabel("Actions")
+	actionsLabel.AddCSSClass("caption")
+	actionsLabel.SetHAlign(gtk.AlignStart)
+	actionsBox.Append(actionsLabel)
+
+	actionsBox.Append(createActionBtn("document-new-symbolic", "New File", func() {
+		fs := create_popup.NewFileSelector(m.Path, m.pathChanged)
+		fs.SetVisible(true)
+		fs.SetTransientFor(&mainWindow.Window)
+		fs.SetModal(true)
+	}))
+	actionsBox.Append(createActionBtn("folder-new-symbolic", "New Folder", func() {
+		ds := create_popup.NewDirectorySelector(m.Path, m.pathChanged)
+		ds.SetVisible(true)
+		ds.SetTransientFor(&mainWindow.Window)
+		ds.SetModal(true)
+	}))
+	actionsBox.Append(createActionBtn("utilities-terminal-symbolic", "Open Terminal", func() {
+		m.ViewerPanel.FileViewer.OpenTerminal()
+	}))
+	actionsBox.Append(createActionBtn("view-reveal-symbolic", "Toggle Previewer", togglePreviewer))
+
+	actionsBox.Append(gtk.NewSeparator(gtk.OrientationHorizontal))
+
+	sortLabel := gtk.NewLabel("Sort By")
+	sortLabel.AddCSSClass("caption")
+	sortLabel.SetHAlign(gtk.AlignStart)
+	actionsBox.Append(sortLabel)
+
+	sortBox := gtk.NewBox(gtk.OrientationHorizontal, 0)
+	sortBox.AddCSSClass("linked")
+	
+	sortNameBtn := gtk.NewButtonWithLabel("Name")
+	sortTimeBtn := gtk.NewButtonWithLabel("Time")
+	
+	sortNameBtn.ConnectClicked(func() {
+		m.ViewerPanel.FileViewer.SortOrder = viewer.SortByName
+		m.ViewerPanel.FileViewer.Refresh(false)
+		actionsPopover.Popdown()
+	})
+	sortTimeBtn.ConnectClicked(func() {
+		m.ViewerPanel.FileViewer.SortOrder = viewer.SortByTime
+		m.ViewerPanel.FileViewer.Refresh(false)
+		actionsPopover.Popdown()
+	})
+	
+	sortBox.Append(sortNameBtn)
+	sortBox.Append(sortTimeBtn)
+	sortNameBtn.SetHExpand(true)
+	sortTimeBtn.SetHExpand(true)
+	actionsBox.Append(sortBox)
+
+	actionsBox.Append(gtk.NewSeparator(gtk.OrientationHorizontal))
+
+	filterLabel := gtk.NewLabel("Filters")
+	filterLabel.AddCSSClass("caption")
+	filterLabel.SetHAlign(gtk.AlignStart)
+	actionsBox.Append(filterLabel)
+	
+	actionsBox.Append(m.ViewerPanel.FileViewer.FilterBox)
 }

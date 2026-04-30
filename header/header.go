@@ -1,34 +1,34 @@
 package header
 
 import (
+	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
 
 type HeaderBar struct {
-	*gtk.Box
-	LeftHeader           *gtk.HeaderBar
-	RightHeader          *gtk.HeaderBar
-	NewButton            *gtk.MenuButton
-	TerminalButton       *gtk.Button
+	LeftHeader           *adw.HeaderBar
+	RightHeader          *adw.HeaderBar
+	ActionsButton        *gtk.MenuButton
 	ShortcutsButton      *gtk.Button
 	SearchButton         *gtk.Button
-	PreviewerPanelButton *gtk.Button
 	CircularProgressBar  *CircularProgressBar
 }
 
-func NewHeaderBar(mainWindow *gtk.ApplicationWindow) *HeaderBar {
-	container := gtk.NewBox(gtk.OrientationHorizontal, 0)
-	container.AddCSSClass("header-container")
-
-	leftHeader := gtk.NewHeaderBar()
-	leftHeader.AddCSSClass("headerbar")
+func NewHeaderBar(mainWindow *adw.ApplicationWindow) *HeaderBar {
+	leftHeader := adw.NewHeaderBar()
 	leftHeader.AddCSSClass("left-header")
-	leftHeader.SetShowTitleButtons(false)
+	leftHeader.SetShowStartTitleButtons(true)
+	leftHeader.SetShowEndTitleButtons(false)
 
-	rightHeader := gtk.NewHeaderBar()
-	rightHeader.AddCSSClass("headerbar")
+	rightHeader := adw.NewHeaderBar()
 	rightHeader.AddCSSClass("right-header")
-	rightHeader.SetShowTitleButtons(true)
+	rightHeader.SetShowStartTitleButtons(false)
+	rightHeader.SetShowEndTitleButtons(true)
+
+	// Sync heights of the two headers
+	sizeGroup := gtk.NewSizeGroup(gtk.SizeGroupVertical)
+	sizeGroup.AddWidget(leftHeader)
+	sizeGroup.AddWidget(rightHeader)
 
 	// Set an empty widget to prevent the default window title from showing in the center
 	rightHeader.SetTitleWidget(gtk.NewBox(gtk.OrientationHorizontal, 0))
@@ -40,16 +40,20 @@ func NewHeaderBar(mainWindow *gtk.ApplicationWindow) *HeaderBar {
 	atilganIcon.SetPixelSize(24)
 	leftHeader.PackStart(atilganIcon)
 
+	actionsButton := gtk.NewMenuButton()
+	actionsButton.SetIconName("open-menu-symbolic")
+	leftHeader.PackEnd(actionsButton)
+
 	circularProgressBar := NewCircularProgressBar()
 	circularProgressBar.SetVisible(false)
 	rightHeader.PackStart(circularProgressBar)
 
 	aboutButton := gtk.NewButtonFromIconName("help-about-symbolic")
 	aboutButton.ConnectClicked(func() {
-		aboutDialog := gtk.NewAboutDialog()
-		aboutDialog.SetProgramName("Atilgan")
+		aboutDialog := adw.NewAboutWindow()
+		aboutDialog.SetApplicationName("Atilgan")
 		aboutDialog.SetVersion("0.1.0")
-		aboutDialog.SetLogoIconName("atilgan_icon")
+		aboutDialog.SetApplicationIcon("atilgan_icon")
 		aboutDialog.SetCopyright("Copyright © 2025 MrSametBurgazoglu")
 		aboutDialog.SetWebsite("https://github.com/MrSametBurgazoglu/AtilganFileManager")
 		aboutDialog.SetVisible(true)
@@ -59,35 +63,13 @@ func NewHeaderBar(mainWindow *gtk.ApplicationWindow) *HeaderBar {
 	shortcutsButton := gtk.NewButtonFromIconName("preferences-desktop-keyboard-shortcuts-symbolic")
 	rightHeader.PackEnd(shortcutsButton)
 
-	previewerPanelButton := gtk.NewButtonFromIconName("view-reveal-symbolic")
-	rightHeader.PackEnd(previewerPanelButton)
-
-	terminalButton := gtk.NewButtonFromIconName("utilities-terminal-symbolic")
-	rightHeader.PackEnd(terminalButton)
-
-	newButton := gtk.NewMenuButton()
-	newButton.SetIconName("list-add-symbolic")
-	rightHeader.PackEnd(newButton)
-
-	container.Append(leftHeader)
-	
-	separator := gtk.NewSeparator(gtk.OrientationVertical)
-	separator.AddCSSClass("header-separator")
-	container.Append(separator)
-	
-	container.Append(rightHeader)
-	rightHeader.SetHExpand(true)
-
 	return &HeaderBar{
-		Box:                  container,
 		LeftHeader:           leftHeader,
 		RightHeader:          rightHeader,
-		NewButton:            newButton,
-		TerminalButton:       terminalButton,
+		ActionsButton:        actionsButton,
 		ShortcutsButton:      shortcutsButton,
 		SearchButton:         searchButton,
 		CircularProgressBar:  circularProgressBar,
-		PreviewerPanelButton: previewerPanelButton,
 	}
 }
 
