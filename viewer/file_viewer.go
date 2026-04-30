@@ -80,12 +80,14 @@ func NewFileViewer(mainWindow *gtk.Window, path string, pathChanged func(string)
 		specialPathManager: specialPathManager,
 	}
 	viewer.SetVExpand(true)
+	viewer.SetHExpand(true)
 
 	headerBox := gtk.NewBox(gtk.OrientationHorizontal, 6)
+	headerBox.SetMarginStart(6)
+	headerBox.SetMarginEnd(6)
+	headerBox.SetMarginTop(4)
+	headerBox.SetMarginBottom(4)
 	viewer.Box.Append(headerBox)
-
-	separator := gtk.NewSeparator(gtk.OrientationHorizontal)
-	viewer.Box.Append(separator)
 
 	searchBar := gtk.NewBox(gtk.OrientationHorizontal, 6)
 	searchBar.SetHExpand(true)
@@ -110,10 +112,12 @@ func NewFileViewer(mainWindow *gtk.Window, path string, pathChanged func(string)
 		viewer.SearchRevealer.SetRevealChild(false)
 	})
 
-	leftBox := gtk.NewBox(gtk.OrientationHorizontal, 6)
+	leftBox := gtk.NewBox(gtk.OrientationHorizontal, 8)
 	leftBox.SetHExpand(true)
 	headerBox.Append(leftBox)
+	viewer.folderIcon.SetPixelSize(20)
 	leftBox.Append(viewer.folderIcon)
+	viewer.folderName.AddCSSClass("preview-label") // Reusing preview-label class for bold
 	leftBox.Append(viewer.folderName)
 
 	rightBox := gtk.NewBox(gtk.OrientationHorizontal, 6)

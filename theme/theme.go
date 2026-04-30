@@ -18,9 +18,9 @@ type SpacingConfig struct {
 func NewTheme() *SpacingConfig {
 	return &SpacingConfig{
 		Fonts: FontConfig{
-			HeaderSize:   10,
-			FilenameSize: 14,
-			SizeTextSize: 11,
+			HeaderSize:   11,
+			FilenameSize: 13,
+			SizeTextSize: 10,
 		},
 	}
 }
@@ -58,18 +58,20 @@ type ColorTheme struct {
 	HeaderTextColor       gdk.RGBA
 	CopyCutBgColor        gdk.RGBA
 	HoverBgColor          gdk.RGBA
+	AccentColor           gdk.RGBA
 }
 
-// NewColorTheme creates a new color theme with default dark colors
+// NewColorTheme creates a new color theme with Aurora Dark palette
 func NewColorTheme() *ColorTheme {
 	return &ColorTheme{
-		BackgroundColor:       gdk.NewRGBA(45.0/255, 45.0/255, 45.0/255, 1),
-		TextColor:             gdk.NewRGBA(245.0/255, 245.0/255, 245.0/255, 1),
-		SelectedBgColor:       gdk.NewRGBA(64.0/255, 64.0/255, 64.0/255, 1),
-		SelectedTextColor:     gdk.NewRGBA(245.0/255, 245.0/255, 245.0/255, 1),
-		HeaderBackgroundColor: gdk.NewRGBA(36.0/255, 36.0/255, 36.0/255, 1),
-		HeaderTextColor:       gdk.NewRGBA(245.0/255, 245.0/255, 245.0/255, 1),
-		CopyCutBgColor:        gdk.NewRGBA(50.0/255, 70.0/255, 90.0/255, 1),
-		HoverBgColor:          gdk.NewRGBA(55.0/255, 55.0/255, 55.0/255, 1),
+		BackgroundColor:       gdk.NewRGBA(30.0/255, 30.0/255, 46.0/255, 1),    // #1e1e2e
+		TextColor:             gdk.NewRGBA(205.0/255, 214.0/255, 244.0/255, 1), // #cdd6f4
+		SelectedBgColor:       gdk.NewRGBA(138.0/255, 173.0/255, 244.0/255, 0.2),
+		SelectedTextColor:     gdk.NewRGBA(137.0/255, 180.0/255, 250.0/255, 1), // #89b4fa
+		HeaderBackgroundColor: gdk.NewRGBA(24.0/255, 24.0/255, 37.0/255, 1),    // #181825
+		HeaderTextColor:       gdk.NewRGBA(186.0/255, 194.0/255, 222.0/255, 1), // #bac2de
+		CopyCutBgColor:        gdk.NewRGBA(49.0/255, 50.0/255, 68.0/255, 1),    // #313244
+		HoverBgColor:          gdk.NewRGBA(69.0/255, 71.0/255, 90.0/255, 0.1),
+		AccentColor:           gdk.NewRGBA(137.0/255, 180.0/255, 250.0/255, 1),
 	}
 }

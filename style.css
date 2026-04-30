@@ -1,151 +1,150 @@
+/* Aurora Dark Aesthetic */
+
+/* Fallback colors for systems without Libadwaita accent colors */
+@define-color accent_bg_color #89b4fa;
+@define-color accent_fg_color #11111b;
+
 window {
-    background-color: #2d2d2d;
-    color: #f5f5f5;
+    background-color: #1e1e2e;
+    color: #cdd6f4;
 }
 
 headerbar {
-    background-color: #242424;
-    border-bottom: 1px solid #404040;
+    background-color: #181825;
+    border-bottom: 1px solid #313244;
+    padding: 6px;
+}
+
+/* Rounded corners for everything */
+button, entry, popover > box, .path-bar, .sidebar-button {
+    border-radius: 8px;
 }
 
 .path-bar {
-    padding: 6px;
+    background-color: #181825;
+    padding: 4px 8px;
+    margin: 4px;
 }
 
 .path-bar button {
     background: none;
     border: none;
     box-shadow: none;
-    padding: 6px;
-    border-radius: 4px;
+    padding: 4px 8px;
+    color: #bac2de;
+    transition: background-color 0.2s;
 }
 
 .path-bar button:hover {
-    background-color: #404040;
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
-.path-bar button:checked {
-    background-color: #353535;
-    border-radius: 1px solid;
+.path-bar button:checked, .path-bar button.selected {
+    background-color: @accent_bg_color;
+    color: @accent_fg_color;
 }
 
 .path-separator {
-    padding-left: 6px;
-    padding-right: 6px;
-    color: #aaa;
+    color: #585b70;
+    margin: 0 4px;
 }
 
 .search-entry {
-    background-color: #404040;
-    color: #f5f5f5;
-    border-radius: 5px;
+    background-color: #313244;
+    color: #cdd6f4;
+    border: 1px solid #45475a;
     padding: 6px 12px;
-    border: 1px solid #505050;
 }
 
 .search-entry:focus {
-    border-color: #707070;
+    border-color: @accent_bg_color;
 }
 
 button {
-    background: none;
-    color: #f5f5f5;
-    padding: 6px 12px;
+    background-color: transparent;
     border: none;
-    box-shadow: none;
-    transition:
-        background-color 0.3s,
-        box-shadow 0.3s;
+    padding: 6px;
+    transition: background-color 0.2s;
 }
 
 button:hover {
-    background-color: #505050;
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 button:active {
-    background-color: #353535;
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
-separator {
-    background-color: #555;
-}
-
-scrollbar {
-    background-color: #2d2d2d;
-}
-
-scrollbar slider {
-    background-color: #404040;
-    border-radius: 3px;
-    min-width: 6px;
-    min-height: 6px;
-}
-
-scrollbar slider:hover {
-    background-color: #505050;
-}
-
+/* Sidebar styling */
 .sidebar {
-    background-color: transparent;
+    background-color: #11111b;
+    padding: 4px;
 }
 
-.sidebar .sidebar-button {
-    background: none;
-    border: none;
-    box-shadow: none;
+.sidebar-button {
+    padding: 4px;
+    margin-bottom: 2px;
+    color: #bac2de;
+    min-width: 40px;
+    min-height: 40px;
 }
 
-.sidebar .sidebar-button:hover {
-    background-color: #404040;
+.sidebar-button:hover {
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
-.sidebar .sidebar-button.selected {
-    background-color: #505050;
+.sidebar-button.selected {
+    background-color: @accent_bg_color;
+    color: @accent_fg_color;
+}
+
+/* Paned handles */
+paned > separator {
+    background-color: #313244;
+    min-width: 1px;
+    min-height: 1px;
+}
+
+/* Scrolled window */
+scrolledwindow {
+    background-color: #1e1e2e;
+}
+
+/* Custom drawing areas usually don't use CSS for their internal content, 
+   but we can style the container */
+.file-list-container {
+    background-color: #1e1e2e;
 }
 
 .preview-panel {
-    background-color: #242424;
-    padding: 12px;
+    background-color: #181825;
+    padding: 16px;
 }
 
-.dir-previewer-header {
-    padding: 3px;
-    border-bottom: 1px solid #404040;
+scrollbar slider {
+    background-color: #45475a;
+    border-radius: 4px;
+}
+
+scrollbar slider:hover {
+    background-color: #585b70;
 }
 
 popover > box {
-    padding: 12px;
-    background-color: #242424;
+    background-color: #1e1e2e;
+    border: 1px solid #313244;
+    padding: 8px;
 }
 
 .preview-label {
-    font-size: 16px;
-    padding: 10px;
-}
-
-headerbar > .titlebar-right > .titlebutton,
-headerbar > .titlebar-left > .titlebutton {
-    background: none;
-    border: none;
-    box-shadow: none;
-}
-
-headerbar > .titlebar-right > .titlebutton:hover,
-headerbar > .titlebar-left > .titlebutton:hover {
-    background-color: #404040;
+    font-size: 1.1em;
+    font-weight: bold;
+    color: @accent_bg_color;
 }
 
 .preview-info-box {
-    font-size: 16px;
-    border: 2px solid #404040;
-    border-radius: 5px;
-    background-color: #2d2d2d;
-}
-
-.preview-info-item {
-    padding: 2px;
-}
-
-.preview-info-item:hover {
-    border-color: #505050;
+    background-color: #181825;
+    border-radius: 10px;
+    border: 1px solid #313244;
+    padding: 12px;
 }

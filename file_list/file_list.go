@@ -2,6 +2,7 @@ package file_list
 
 import (
 	"fmt"
+	"math"
 	"os/exec"
 	"slices"
 	"strings"
@@ -20,8 +21,8 @@ import (
 
 
 const (
-	rowHeight    = 24
-	headerHeight = 20
+	rowHeight    = 40
+	headerHeight = 28
 )
 
 type FileList struct {
@@ -63,8 +64,9 @@ func NewFileList(canSelect bool, specialPathManager *special_path.SpecialPathMan
 	fl.SetChild(fl.DrawingArea)
 	fl.SetVExpand(true)
 
-	fl.SetMinContentWidth(600)
-	fl.SetMaxContentHeight(600)
+	fl.SetMinContentWidth(500)
+	fl.SetMarginStart(8)
+	fl.SetMarginEnd(8)
 	fl.SetPolicy(gtk.PolicyAlways, gtk.PolicyAlways)
 
 	if canSelect {
@@ -73,17 +75,13 @@ func NewFileList(canSelect bool, specialPathManager *special_path.SpecialPathMan
 			switch keyval {
 			case gdk.KEY_Up:
 				if fl.SelectedIDX > 0 {
-					fl.SelectedIDX--
-					fl.DrawingArea.QueueDraw()
-					fl.SelectionChanged(fl.SelectedIDX)
+					fl.selectItem(fl.SelectedIDX - 1)
 				}
 				return true
 
 			case gdk.KEY_Down:
 				if fl.SelectedIDX < len(fl.Items)-1 {
-					fl.SelectedIDX++
-					fl.DrawingArea.QueueDraw()
-					fl.SelectionChanged(fl.SelectedIDX)
+					fl.selectItem(fl.SelectedIDX + 1)
 				}
 				return true
 
@@ -195,47 +193,91 @@ func (fl *FileList) CleanCopyCutItems() {
 }
 
 func (fl *FileList) onDraw(da *gtk.DrawingArea, cr *cairo.Context, w, h int) {
+	// Try to get system accent color
+	sc := da.StyleContext()
+	if accent, ok := sc.LookupColor("accent_bg_color"); ok {
+		fl.colorTheme.AccentColor = *accent
+		fl.colorTheme.SelectedBgColor = gdk.NewRGBA(accent.Red(), accent.Green(), accent.Blue(), 0.2)
+	}
+
 	y := 0
 	currentGroup := ""
 
 	for i, item := range fl.Items {
 		if item.Group != currentGroup {
-			fl.drawHeader(cr, item.Group, y)
+			fl.drawHeader(cr, item.Group, y, w)
 			y += headerHeight
 			currentGroup = item.Group
 		}
 
-		fl.drawRow(cr, i, item, y)
+		fl.drawRow(cr, i, item, y, w)
 		y += rowHeight
 	}
 	fl.DrawingArea.SetContentHeight(y)
-	fl.ensureVisible()
 }
 
-func (fl *FileList) drawHeader(cr *cairo.Context, text string, y int) {
+func (fl *FileList) selectItem(idx int) {
+	if idx < 0 || idx >= len(fl.Items) {
+		return
+	}
+	fl.SelectedIDX = idx
+	fl.ensureVisible()
+	fl.DrawingArea.QueueDraw()
+	if fl.SelectionChanged != nil {
+		fl.SelectionChanged(fl.SelectedIDX)
+	}
+}
+
+func roundedRectangle(cr *cairo.Context, x, y, w, h, r float64) {
+	if w < 2*r {
+		r = w / 2
+	}
+	if h < 2*r {
+		r = h / 2
+	}
+	cr.MoveTo(x+r, y)
+	cr.LineTo(x+w-r, y)
+	cr.Arc(x+w-r, y+r, r, -math.Pi/2, 0)
+	cr.LineTo(x+w, y+h-r)
+	cr.Arc(x+w-r, y+h-r, r, 0, math.Pi/2)
+	cr.LineTo(x+r, y+h)
+	cr.Arc(x+r, y+h-r, r, math.Pi/2, math.Pi)
+	cr.LineTo(x, y+r)
+	cr.Arc(x+r, y+r, r, math.Pi, 3*math.Pi/2)
+	cr.ClosePath()
+}
+
+func (fl *FileList) drawHeader(cr *cairo.Context, text string, y int, w int) {
 	cr.SetSourceRGBA(float64(fl.colorTheme.HeaderBackgroundColor.Red()), float64(fl.colorTheme.HeaderBackgroundColor.Green()), float64(fl.colorTheme.HeaderBackgroundColor.Blue()), float64(fl.colorTheme.HeaderBackgroundColor.Alpha()))
-	cr.Rectangle(0, float64(y), 1200, float64(headerHeight))
+	cr.Rectangle(0, float64(y), float64(w), float64(headerHeight))
 	cr.Fill()
 
 	cr.SetSourceRGBA(float64(fl.colorTheme.HeaderTextColor.Red()), float64(fl.colorTheme.HeaderTextColor.Green()), float64(fl.colorTheme.HeaderTextColor.Blue()), float64(fl.colorTheme.HeaderTextColor.Alpha()))
 	cr.SelectFontFace("Sans", cairo.FontSlantNormal, cairo.FontWeightBold)
 	cr.SetFontSize(fl.themeConfig.Fonts.HeaderSize)
-	cr.MoveTo(8, float64(y+15))
+	cr.MoveTo(12, float64(y+18))
 	cr.ShowText(text)
 }
 
-func (fl *FileList) drawRow(cr *cairo.Context, idx int, item *types.ListItem, y int) {
+func (fl *FileList) drawRow(cr *cairo.Context, idx int, item *types.ListItem, y int, w int) {
+	padding := 4.0
 	if idx == fl.SelectedIDX && fl.canSelect {
 		cr.SetSourceRGBA(float64(fl.colorTheme.SelectedBgColor.Red()), float64(fl.colorTheme.SelectedBgColor.Green()), float64(fl.colorTheme.SelectedBgColor.Blue()), float64(fl.colorTheme.SelectedBgColor.Alpha()))
-		cr.Rectangle(0, float64(y), 1200, float64(rowHeight))
+		roundedRectangle(cr, padding, float64(y)+padding, float64(w)-2*padding, float64(rowHeight)-2*padding, 8)
 		cr.Fill()
+
+		// Border for selection
+		cr.SetSourceRGBA(float64(fl.colorTheme.AccentColor.Red()), float64(fl.colorTheme.AccentColor.Green()), float64(fl.colorTheme.AccentColor.Blue()), 0.5)
+		cr.SetLineWidth(1)
+		roundedRectangle(cr, padding, float64(y)+padding, float64(w)-2*padding, float64(rowHeight)-2*padding, 8)
+		cr.Stroke()
 	} else if slices.Contains(fl.CopyCutPaths, item.Path) {
 		cr.SetSourceRGBA(float64(fl.colorTheme.CopyCutBgColor.Red()), float64(fl.colorTheme.CopyCutBgColor.Green()), float64(fl.colorTheme.CopyCutBgColor.Blue()), float64(fl.colorTheme.CopyCutBgColor.Alpha()))
-		cr.Rectangle(0, float64(y), 1200, float64(rowHeight))
+		roundedRectangle(cr, padding, float64(y)+padding, float64(w)-2*padding, float64(rowHeight)-2*padding, 8)
 		cr.Fill()
 	} else {
 		cr.SetSourceRGBA(float64(fl.colorTheme.BackgroundColor.Red()), float64(fl.colorTheme.BackgroundColor.Green()), float64(fl.colorTheme.BackgroundColor.Blue()), float64(fl.colorTheme.BackgroundColor.Alpha()))
-		cr.Rectangle(0, float64(y), 1200, float64(rowHeight))
+		cr.Rectangle(0, float64(y), float64(w), float64(rowHeight))
 		cr.Fill()
 	}
 
@@ -255,15 +297,12 @@ func (fl *FileList) drawRow(cr *cairo.Context, idx int, item *types.ListItem, y 
 	if paintable != nil {
 		file := paintable.File()
 		if file != nil {
-			path := file.Path()
-			if path != "" {
-				texture, err := gdk.NewTextureFromFile(file)
-				if err == nil {
-					pixbuf := gdk.PixbufGetFromTexture(texture)
-					if pixbuf != nil {
-						gdk.CairoSetSourcePixbuf(cr, pixbuf, 8, float64(y+(rowHeight-iconSize)/2))
-						cr.Paint()
-					}
+			texture, err := gdk.NewTextureFromFile(file)
+			if err == nil {
+				pixbuf := gdk.PixbufGetFromTexture(texture)
+				if pixbuf != nil {
+					gdk.CairoSetSourcePixbuf(cr, pixbuf, 12, float64(y+(rowHeight-iconSize)/2))
+					cr.Paint()
 				}
 			}
 		}
@@ -274,7 +313,7 @@ func (fl *FileList) drawRow(cr *cairo.Context, idx int, item *types.ListItem, y 
 	} else {
 		cr.SetSourceRGBA(float64(fl.colorTheme.TextColor.Red()), float64(fl.colorTheme.TextColor.Green()), float64(fl.colorTheme.TextColor.Blue()), float64(fl.colorTheme.TextColor.Alpha()))
 	}
-	cr.SelectFontFace("Sans", cairo.FontSlantNormal, cairo.FontWeightBold)
+	cr.SelectFontFace("Sans", cairo.FontSlantNormal, cairo.FontWeightNormal)
 	cr.SetFontSize(fl.themeConfig.Fonts.FilenameSize)
 	yOffset := fl.themeConfig.GetFilenameYOffset(rowHeight)
 	cr.MoveTo(40, float64(y)+yOffset)
@@ -283,12 +322,12 @@ func (fl *FileList) drawRow(cr *cairo.Context, idx int, item *types.ListItem, y 
 	if idx == fl.SelectedIDX && fl.canSelect {
 		cr.SetSourceRGBA(float64(fl.colorTheme.SelectedTextColor.Red()), float64(fl.colorTheme.SelectedTextColor.Green()), float64(fl.colorTheme.SelectedTextColor.Blue()), float64(fl.colorTheme.SelectedTextColor.Alpha()))
 	} else {
-		cr.SetSourceRGBA(float64(fl.colorTheme.TextColor.Red()), float64(fl.colorTheme.TextColor.Green()), float64(fl.colorTheme.TextColor.Blue()), float64(fl.colorTheme.TextColor.Alpha()))
+		cr.SetSourceRGBA(float64(fl.colorTheme.TextColor.Red()), float64(fl.colorTheme.TextColor.Green()), float64(fl.colorTheme.TextColor.Blue()), float64(fl.colorTheme.TextColor.Alpha()*0.8))
 	}
 	cr.SelectFontFace("Sans", cairo.FontSlantNormal, cairo.FontWeightNormal)
 	cr.SetFontSize(fl.themeConfig.Fonts.SizeTextSize)
 	sizeYOffset := fl.themeConfig.GetSizeTextYOffset(rowHeight)
-	cr.MoveTo(520, float64(y)+sizeYOffset)
+	cr.MoveTo(float64(w)-100, float64(y)+sizeYOffset)
 	if item.IsDir {
 		cr.ShowText(fmt.Sprintf("%d item", item.ItemCount))
 	} else if item.Size > 0 {
@@ -355,9 +394,7 @@ func (fl *FileList) newGestureClick(da *gtk.DrawingArea) *gtk.GestureClick {
 	click.ConnectPressed(func(n int, x, y float64) {
 		idx := fl.ItemAt(int(y))
 		if idx >= 0 {
-			fl.SelectedIDX = idx
-			fl.SelectionChanged(fl.SelectedIDX)
-			da.QueueDraw()
+			fl.selectItem(idx)
 
 			if click.CurrentButton() == gdk.BUTTON_PRIMARY && n == 2 {
 				if !fl.Items[idx].IsDir {

@@ -16,9 +16,9 @@ type Sidebar struct {
 }
 
 func NewSidebar(pathChanged func(string)) *Sidebar {
-	box := gtk.NewBox(gtk.OrientationHorizontal, 6)
+	box := gtk.NewBox(gtk.OrientationVertical, 8)
 	box.SetHExpand(false)
-	box.SetHAlign(gtk.AlignCenter)
+	box.SetVExpand(true)
 	box.AddCSSClass("sidebar")
 
 	sidebar := &Sidebar{
@@ -38,54 +38,43 @@ func NewSidebar(pathChanged func(string)) *Sidebar {
 	music := xdg.UserDirs.Music
 	videos := xdg.UserDirs.Videos
 
-	homeButton := gtk.NewButtonFromIconName("user-home-symbolic")
-	homeButton.AddCSSClass("sidebar-button")
-	homeButton.SetTooltipText("home")
+	createButton := func(iconName, tooltip string) *gtk.Button {
+		btn := gtk.NewButtonFromIconName(iconName)
+		btn.AddCSSClass("sidebar-button")
+		btn.SetTooltipText(tooltip)
+		btn.SetHAlign(gtk.AlignCenter)
+		btn.SetSizeRequest(40, 40)
+		return btn
+	}
+
+	homeButton := createButton("user-home-symbolic", "home")
 	sidebar.buttons[homeDir] = homeButton
 
-	recentButton := gtk.NewButtonFromIconName("document-open-recent-symbolic")
-	recentButton.AddCSSClass("sidebar-button")
-	recentButton.SetTooltipText("recent")
+	recentButton := createButton("document-open-recent-symbolic", "recent")
 	sidebar.buttons["recent://"] = recentButton
 
-	tagsButton := gtk.NewButtonFromIconName("tag-symbolic")
-	tagsButton.AddCSSClass("sidebar-button")
-	tagsButton.SetTooltipText("tags")
+	tagsButton := createButton("tag-symbolic", "tags")
 	sidebar.buttons["tags://"] = tagsButton
 
-	trashButton := gtk.NewButtonFromIconName("user-trash-symbolic")
-	trashButton.AddCSSClass("sidebar-button")
-	trashButton.SetTooltipText("trash")
+	trashButton := createButton("user-trash-symbolic", "trash")
 	sidebar.buttons["trash://"] = trashButton
 
-	desktopButton := gtk.NewButtonFromIconName("user-desktop-symbolic")
-	desktopButton.AddCSSClass("sidebar-button")
-	desktopButton.SetTooltipText("desktop")
+	desktopButton := createButton("user-desktop-symbolic", "desktop")
 	sidebar.buttons[desktop] = desktopButton
 
-	downloadsButton := gtk.NewButtonFromIconName("folder-download-symbolic")
-	downloadsButton.AddCSSClass("sidebar-button")
-	downloadsButton.SetTooltipText("downloads")
+	downloadsButton := createButton("folder-download-symbolic", "downloads")
 	sidebar.buttons[downloads] = downloadsButton
 
-	documentsButton := gtk.NewButtonFromIconName("folder-documents-symbolic")
-	documentsButton.AddCSSClass("sidebar-button")
-	documentsButton.SetTooltipText("documents")
+	documentsButton := createButton("folder-documents-symbolic", "documents")
 	sidebar.buttons[documents] = documentsButton
 
-	picturesButton := gtk.NewButtonFromIconName("folder-pictures-symbolic")
-	picturesButton.AddCSSClass("sidebar-button")
-	picturesButton.SetTooltipText("pictures")
+	picturesButton := createButton("folder-pictures-symbolic", "pictures")
 	sidebar.buttons[pictures] = picturesButton
 
-	musicButton := gtk.NewButtonFromIconName("folder-music-symbolic")
-	musicButton.AddCSSClass("sidebar-button")
-	musicButton.SetTooltipText("music")
+	musicButton := createButton("folder-music-symbolic", "music")
 	sidebar.buttons[music] = musicButton
 
-	videosButton := gtk.NewButtonFromIconName("folder-videos-symbolic")
-	videosButton.AddCSSClass("sidebar-button")
-	videosButton.SetTooltipText("videos")
+	videosButton := createButton("folder-videos-symbolic", "videos")
 	sidebar.buttons[videos] = videosButton
 
 	if homeDir != "" {
