@@ -147,10 +147,18 @@ scrollbar slider:hover {
     background-color: #585b70;
 }
 
+popover > contents,
 popover > box {
     background-color: #1e1e2e;
+    color: #cdd6f4;
     border: 1px solid #313244;
     padding: 8px;
+}
+
+button.flat {
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
 }
 
 .preview-info-box {
@@ -177,4 +185,65 @@ popover > box {
     font-size: 0.95em;
     color: @accent_bg_color;
     font-weight: 500;
+}
+
+/* Dialog & Creation Styles */
+.title-4 {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #cdd6f4;
+}
+
+.caption {
+    font-size: 0.85em;
+    color: #a6adc8;
+    margin-bottom: 2px;
+}
+
+.view {
+    background-color: #11111b;
+    color: #cdd6f4;
+    border-radius: 8px;
+    border: 1px solid #313244;
+}
+
+.view label {
+    color: #cdd6f4;
+}
+
+entry.error {
+    border-color: #f38ba8;
+    color: #f38ba8;
+}
+
+entry.error:focus {
+    border-color: #f38ba8;
+    outline-color: rgba(243, 139, 168, 0.3);
+}
+
+button.suggested-action {
+    background-color: @accent_bg_color;
+    color: @accent_fg_color;
+    font-weight: bold;
+}
+
+button.suggested-action:hover {
+    background-color: alpha(@accent_bg_color, 0.8);
+}
+
+button.suggested-action:disabled {
+    background-color: #313244;
+    color: #585b70;
+}
+
+entry {
+    background-color: #313244;
+    color: #cdd6f4;
+    border: 1px solid #45475a;
+    padding: 8px 12px;
+    transition: all 0.2s;
+}
+
+entry:focus {
+    border-color: @accent_bg_color;
 }

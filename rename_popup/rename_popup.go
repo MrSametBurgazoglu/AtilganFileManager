@@ -25,16 +25,61 @@ func NewRenameWindow(basePath string, selectedPath string) *RenameWindow {
 	}
 
 	rw.SetTitle("Rename")
-	rw.SetDefaultSize(400, 50)
+	rw.SetResizable(false)
+	rw.SetDefaultSize(350, -1)
 	rw.SetModal(true)
 
-	box := gtk.NewBox(gtk.OrientationVertical, 5)
-	rw.SetChild(box)
+	headerBar := gtk.NewHeaderBar()
+	headerBar.SetShowTitleButtons(false)
+
+	titleLabel := gtk.NewLabel("Rename")
+	titleLabel.AddCSSClass("title-4")
+	headerBar.SetTitleWidget(titleLabel)
+
+	cancelBtn := gtk.NewButtonWithLabel("Cancel")
+	cancelBtn.ConnectClicked(func() {
+		rw.Destroy()
+	})
+	headerBar.PackStart(cancelBtn)
+
+	renameBtn := gtk.NewButtonWithLabel("Rename")
+	renameBtn.AddCSSClass("suggested-action")
+	headerBar.PackEnd(renameBtn)
+	rw.SetTitlebar(headerBar)
+
+	mainBox := gtk.NewBox(gtk.OrientationVertical, 12)
+	mainBox.SetMarginTop(16)
+	mainBox.SetMarginBottom(16)
+	mainBox.SetMarginStart(16)
+	mainBox.SetMarginEnd(16)
+
+	entryBox := gtk.NewBox(gtk.OrientationVertical, 4)
+	entryLabel := gtk.NewLabel("New Name")
+	entryLabel.SetHAlign(gtk.AlignStart)
+	entryLabel.AddCSSClass("caption")
 
 	rw.Entry.SetText(filepath.Base(selectedPath))
-	box.Append(rw.Entry)
+	rw.Entry.SetHExpand(true)
+	
+	entryBox.Append(entryLabel)
+	entryBox.Append(rw.Entry)
+	mainBox.Append(entryBox)
 
-	rw.Entry.Connect("activate", func() {
+	validate := func() {
+		isValid := rw.isEntryValid()
+		renameBtn.SetSensitive(isValid)
+		if isValid {
+			rw.Entry.SetIconFromIconName(gtk.EntryIconSecondary, "")
+			rw.Entry.RemoveCSSClass("error")
+		} else {
+			rw.Entry.SetIconFromIconName(gtk.EntryIconSecondary, "window-close-symbolic")
+			rw.Entry.AddCSSClass("error")
+		}
+	}
+
+	rw.Entry.Connect("notify::text", validate)
+
+	renameAction := func() {
 		if rw.isEntryValid() {
 			newPath := filepath.Join(rw.BasePath, rw.GetNewName())
 			err := os.Rename(rw.SelectedPath, newPath)
@@ -43,10 +88,15 @@ func NewRenameWindow(basePath string, selectedPath string) *RenameWindow {
 			} else {
 				rw.Destroy()
 			}
-		} else {
-			rw.Entry.SetIconFromIconName(gtk.EntryIconSecondary, "window-close-symbolic")
 		}
-	})
+	}
+
+	rw.Entry.Connect("activate", renameAction)
+	renameBtn.ConnectClicked(renameAction)
+
+	rw.SetChild(mainBox)
+	rw.Entry.GrabFocus()
+	validate()
 
 	return rw
 }
