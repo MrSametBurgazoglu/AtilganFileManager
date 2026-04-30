@@ -16,6 +16,25 @@ headerbar, .headerbar {
     padding: 6px;
 }
 
+.left-header {
+    background-color: #11111b; /* Matches sidebar */
+    border-bottom: 1px solid #313244;
+}
+
+.right-header {
+    background-color: #181825;
+    border-bottom: 1px solid #313244;
+}
+
+.header-separator {
+    background-color: #313244;
+    min-width: 1px;
+}
+
+.header-container {
+    background-color: #181825;
+}
+
 /* Global Button & MenuButton resets for transparency and dark theme */
 button, 
 menubutton {
@@ -105,10 +124,9 @@ popover > box,
 }
 
 .sidebar-button {
-    padding: 4px;
+    padding: 8px 12px;
     margin-bottom: 2px;
     color: #bac2de;
-    min-width: 40px;
     min-height: 40px;
 }
 

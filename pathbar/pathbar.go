@@ -51,7 +51,7 @@ func NewPathBar(setPath func(string)) *PathBar {
 	pathBar.AddCSSClass("path-bar-container")
 
 	pathBar.SetPath = setPath
-	pathBar.SetHAlign(gtk.AlignCenter)
+	pathBar.SetHAlign(gtk.AlignStart)
 	pathBar.SetHExpand(true)
 
 	pathBar.PathbarBox = gtk.NewBox(gtk.OrientationHorizontal, 0)

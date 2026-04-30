@@ -38,43 +38,52 @@ func NewSidebar(pathChanged func(string)) *Sidebar {
 	music := xdg.UserDirs.Music
 	videos := xdg.UserDirs.Videos
 
-	createButton := func(iconName, tooltip string) *gtk.Button {
-		btn := gtk.NewButtonFromIconName(iconName)
+	createButton := func(iconName, labelText string) *gtk.Button {
+		btn := gtk.NewButton()
+		
+		box := gtk.NewBox(gtk.OrientationHorizontal, 8)
+		box.SetHAlign(gtk.AlignStart)
+		
+		icon := gtk.NewImageFromIconName(iconName)
+		label := gtk.NewLabel(labelText)
+		
+		box.Append(icon)
+		box.Append(label)
+		
+		btn.SetChild(box)
 		btn.AddCSSClass("sidebar-button")
-		btn.SetTooltipText(tooltip)
-		btn.SetHAlign(gtk.AlignCenter)
-		btn.SetSizeRequest(40, 40)
+		btn.SetHAlign(gtk.AlignFill)
 		return btn
 	}
 
-	homeButton := createButton("user-home-symbolic", "home")
+	homeButton := createButton("user-home-symbolic", "Home")
 	sidebar.buttons[homeDir] = homeButton
 
-	recentButton := createButton("document-open-recent-symbolic", "recent")
+	recentButton := createButton("document-open-recent-symbolic", "Recent")
 	sidebar.buttons["recent://"] = recentButton
 
-	tagsButton := createButton("tag-symbolic", "tags")
+	tagsButton := createButton("tag-symbolic", "Tags")
 	sidebar.buttons["tags://"] = tagsButton
 
-	trashButton := createButton("user-trash-symbolic", "trash")
+	trashButton := createButton("user-trash-symbolic", "Trash")
 	sidebar.buttons["trash://"] = trashButton
 
-	desktopButton := createButton("user-desktop-symbolic", "desktop")
+	desktopButton := createButton("user-desktop-symbolic", "Desktop")
 	sidebar.buttons[desktop] = desktopButton
 
-	downloadsButton := createButton("folder-download-symbolic", "downloads")
+	downloadsButton := createButton("folder-download-symbolic", "Downloads")
 	sidebar.buttons[downloads] = downloadsButton
 
-	documentsButton := createButton("folder-documents-symbolic", "documents")
+	documentsButton := createButton("folder-documents-symbolic", "Documents")
 	sidebar.buttons[documents] = documentsButton
 
-	picturesButton := createButton("folder-pictures-symbolic", "pictures")
+	picturesButton := createButton("folder-pictures-symbolic", "Pictures")
 	sidebar.buttons[pictures] = picturesButton
 
-	musicButton := createButton("folder-music-symbolic", "music")
+	musicButton := createButton("folder-music-symbolic", "Music")
 	sidebar.buttons[music] = musicButton
 
-	videosButton := createButton("folder-videos-symbolic", "videos")
+	videosButton := createButton("folder-videos-symbolic", "Videos")
 	sidebar.buttons[videos] = videosButton
 
 	if homeDir != "" {

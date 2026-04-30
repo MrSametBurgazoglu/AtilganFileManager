@@ -80,15 +80,19 @@ func NewMainBox(mainWindow *gtk.Window, headerBar *header.HeaderBar) *MainBox {
 	mainPaned := gtk.NewPaned(gtk.OrientationHorizontal)
 	mainPaned.SetVExpand(true)
 	mainPaned.SetHExpand(true)
-	mainPaned.SetPosition(60)
+	mainPaned.SetPosition(200)
 	mainPaned.SetWideHandle(true)
 	mainVBox.Append(mainPaned)
 
+	mainPaned.NotifyProperty("position", func() {
+		headerBar.LeftHeader.SetSizeRequest(mainPaned.Position(), -1)
+	})
+	headerBar.LeftHeader.SetSizeRequest(mainPaned.Position(), -1)
+
 	mainBox.SideBar = sidebar.NewSidebar(mainBox.pathChanged)
 	mainBox.SideBar.SetOrientation(gtk.OrientationVertical)
-	mainBox.SideBar.SetSizeRequest(60, -1)
-	mainBox.SideBar.SetHExpand(false)
-	mainBox.SideBar.SetHAlign(gtk.AlignStart)
+	mainBox.SideBar.SetHExpand(true)
+	mainBox.SideBar.SetHAlign(gtk.AlignFill)
 	mainPaned.SetStartChild(mainBox.SideBar)
 	mainPaned.SetResizeStartChild(false)
 
@@ -101,9 +105,9 @@ func NewMainBox(mainWindow *gtk.Window, headerBar *header.HeaderBar) *MainBox {
 
 	mainBox.ViewerPanel = viewer_panel.NewPanel(mainWindow, curdir, mainBox.pathChanged, mainBox.SpecialPaths)
 
-	headerBar.SetTitleWidget(mainBox.Pathbar)
-	headerBar.PackStart(mainBox.ViewerPanel.FileViewer.SortButton)
-	headerBar.PackStart(mainBox.ViewerPanel.FileViewer.FilterButton)
+	headerBar.PackStart(mainBox.Pathbar)
+	headerBar.RightHeader.PackEnd(mainBox.ViewerPanel.FileViewer.SortButton)
+	headerBar.RightHeader.PackEnd(mainBox.ViewerPanel.FileViewer.FilterButton)
 
 	mainBox.ViewerPanel.SetHExpand(true)
 	mainBox.ViewerPanel.SetVExpand(true)

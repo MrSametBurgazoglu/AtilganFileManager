@@ -5,7 +5,9 @@ import (
 )
 
 type HeaderBar struct {
-	*gtk.HeaderBar
+	*gtk.Box
+	LeftHeader           *gtk.HeaderBar
+	RightHeader          *gtk.HeaderBar
 	NewButton            *gtk.MenuButton
 	TerminalButton       *gtk.Button
 	ShortcutsButton      *gtk.Button
@@ -15,18 +17,32 @@ type HeaderBar struct {
 }
 
 func NewHeaderBar(mainWindow *gtk.ApplicationWindow) *HeaderBar {
-	headerBar := gtk.NewHeaderBar()
-	headerBar.AddCSSClass("headerbar")
+	container := gtk.NewBox(gtk.OrientationHorizontal, 0)
+	container.AddCSSClass("header-container")
 
-	atilganIcon := gtk.NewImageFromIconName("atilgan_icon")
-	atilganIcon.SetPixelSize(32)
+	leftHeader := gtk.NewHeaderBar()
+	leftHeader.AddCSSClass("headerbar")
+	leftHeader.AddCSSClass("left-header")
+	leftHeader.SetShowTitleButtons(false)
+
+	rightHeader := gtk.NewHeaderBar()
+	rightHeader.AddCSSClass("headerbar")
+	rightHeader.AddCSSClass("right-header")
+	rightHeader.SetShowTitleButtons(true)
+
+	// Set an empty widget to prevent the default window title from showing in the center
+	rightHeader.SetTitleWidget(gtk.NewBox(gtk.OrientationHorizontal, 0))
 
 	searchButton := gtk.NewButtonFromIconName("system-search-symbolic")
-	headerBar.PackStart(searchButton)
+	leftHeader.PackStart(searchButton)
+
+	atilganIcon := gtk.NewImageFromIconName("atilgan_icon")
+	atilganIcon.SetPixelSize(24)
+	leftHeader.PackStart(atilganIcon)
 
 	circularProgressBar := NewCircularProgressBar()
 	circularProgressBar.SetVisible(false)
-	headerBar.PackStart(circularProgressBar)
+	rightHeader.PackStart(circularProgressBar)
 
 	aboutButton := gtk.NewButtonFromIconName("help-about-symbolic")
 	aboutButton.ConnectClicked(func() {
@@ -38,23 +54,34 @@ func NewHeaderBar(mainWindow *gtk.ApplicationWindow) *HeaderBar {
 		aboutDialog.SetWebsite("https://github.com/MrSametBurgazoglu/AtilganFileManager")
 		aboutDialog.SetVisible(true)
 	})
-	headerBar.PackEnd(aboutButton)
+	rightHeader.PackEnd(aboutButton)
 
 	shortcutsButton := gtk.NewButtonFromIconName("preferences-desktop-keyboard-shortcuts-symbolic")
-	headerBar.PackEnd(shortcutsButton)
+	rightHeader.PackEnd(shortcutsButton)
 
 	previewerPanelButton := gtk.NewButtonFromIconName("view-reveal-symbolic")
-	headerBar.PackEnd(previewerPanelButton)
+	rightHeader.PackEnd(previewerPanelButton)
 
 	terminalButton := gtk.NewButtonFromIconName("utilities-terminal-symbolic")
-	headerBar.PackEnd(terminalButton)
+	rightHeader.PackEnd(terminalButton)
 
 	newButton := gtk.NewMenuButton()
 	newButton.SetIconName("list-add-symbolic")
-	headerBar.PackEnd(newButton)
+	rightHeader.PackEnd(newButton)
+
+	container.Append(leftHeader)
+	
+	separator := gtk.NewSeparator(gtk.OrientationVertical)
+	separator.AddCSSClass("header-separator")
+	container.Append(separator)
+	
+	container.Append(rightHeader)
+	rightHeader.SetHExpand(true)
 
 	return &HeaderBar{
-		HeaderBar:            headerBar,
+		Box:                  container,
+		LeftHeader:           leftHeader,
+		RightHeader:          rightHeader,
 		NewButton:            newButton,
 		TerminalButton:       terminalButton,
 		ShortcutsButton:      shortcutsButton,
@@ -77,5 +104,9 @@ func (h *HeaderBar) SetProgress(fraction float64) {
 }
 
 func (h *HeaderBar) SetTitleWidget(widget gtk.Widgetter) {
-	h.HeaderBar.SetTitleWidget(widget)
+	h.RightHeader.SetTitleWidget(widget)
+}
+
+func (h *HeaderBar) PackStart(widget gtk.Widgetter) {
+	h.RightHeader.PackStart(widget)
 }
