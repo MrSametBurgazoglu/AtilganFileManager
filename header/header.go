@@ -85,6 +85,22 @@ func (h *HeaderBar) SetTitleWidget(widget gtk.Widgetter) {
 	h.RightHeader.SetTitleWidget(widget)
 }
 
+func (h *HeaderBar) Remove(widget gtk.Widgetter) {
+	h.LeftHeader.Remove(widget)
+}
+
 func (h *HeaderBar) PackStart(widget gtk.Widgetter) {
 	h.RightHeader.PackStart(widget)
+}
+
+func (h *HeaderBar) PackStartLeft(widget gtk.Widgetter) {
+	h.LeftHeader.PackStart(widget)
+}
+
+func (h *HeaderBar) PackStartRight(widget gtk.Widgetter) {
+	h.RightHeader.PackStart(widget)
+}
+
+func (h *HeaderBar) PackEndLeft(widget gtk.Widgetter) {
+	h.LeftHeader.PackEnd(widget)
 }

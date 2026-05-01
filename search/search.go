@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"os"
 	"os/exec"
-	"path/filepath"
 
 	"github.com/MrSametBurgazoglu/atilgan/file_list"
 	"github.com/MrSametBurgazoglu/atilgan/types"
@@ -16,79 +15,87 @@ type Search struct {
 	*gtk.Box
 	filenameEntry *gtk.Entry
 	contentEntry  *gtk.Entry
-	searchButton  *gtk.Button
+	ContentPanel  *gtk.Box
+	SearchBar     *gtk.Box
 	fileList      *file_list.FileList
 	path          string
 	PathChanged   func(path string)
 }
 
 func NewSearch(path string) *Search {
-	box := gtk.NewBox(gtk.OrientationVertical, 6)
+	box := gtk.NewBox(gtk.OrientationVertical, 0)
 	search := &Search{
 		Box:  box,
 		path: path,
 	}
 
-	hBox := gtk.NewBox(gtk.OrientationHorizontal, 6)
-	hBox.SetVExpand(false)
+	search.SearchBar = gtk.NewBox(gtk.OrientationHorizontal, 6)
+	search.SearchBar.SetHExpand(true)
+	search.SearchBar.SetMarginStart(20)
+	search.SearchBar.SetMarginEnd(20)
 
-	filenameBox := gtk.NewBox(gtk.OrientationHorizontal, 6)
-	filenameLabel := gtk.NewLabel("Filename:")
 	search.filenameEntry = gtk.NewEntry()
+	search.filenameEntry.SetHExpand(true)
+	search.filenameEntry.SetPlaceholderText("Filter by name...")
 	search.filenameEntry.AddCSSClass("search-entry")
-	filenameBox.Append(filenameLabel)
-	filenameBox.Append(search.filenameEntry)
-	hBox.Append(filenameBox)
+	search.SearchBar.Append(search.filenameEntry)
 
-	contentBox := gtk.NewBox(gtk.OrientationHorizontal, 6)
-	contentLabel := gtk.NewLabel("Content:")
+	search.ContentPanel = gtk.NewBox(gtk.OrientationHorizontal, 6)
+	search.ContentPanel.SetMarginStart(6)
+	search.ContentPanel.SetMarginEnd(6)
+	search.ContentPanel.SetMarginTop(6)
+
 	search.contentEntry = gtk.NewEntry()
+	search.contentEntry.SetHExpand(true)
+	search.contentEntry.SetPlaceholderText("Search inside files...")
 	search.contentEntry.AddCSSClass("search-entry")
-	contentBox.Append(contentLabel)
-	contentBox.Append(search.contentEntry)
-	hBox.Append(contentBox)
+	search.ContentPanel.Append(search.contentEntry)
+	search.ContentPanel.SetVisible(false)
 
-	search.searchButton = gtk.NewButtonWithLabel("Search")
-	search.searchButton.ConnectClicked(func() {
-		search.fileList.SetItems(make([]*types.ListItem, 0))
-		go search.performSearch()
+	toggleContentBtn := gtk.NewButtonFromIconName("preferences-system-symbolic")
+	toggleContentBtn.ConnectClicked(func() {
+		visible := !search.ContentPanel.Visible()
+		search.ContentPanel.SetVisible(visible)
+		if visible {
+			toggleContentBtn.AddCSSClass("suggested-action")
+		} else {
+			toggleContentBtn.RemoveCSSClass("suggested-action")
+		}
 	})
-	hBox.Append(search.searchButton)
-	box.Append(hBox)
+	search.SearchBar.Append(toggleContentBtn)
+
+	doSearch := func() {
+		filename := search.filenameEntry.Text()
+		content := search.contentEntry.Text()
+		searchContent := search.ContentPanel.Visible()
+
+		if filename == "" && (!searchContent || content == "") {
+			return
+		}
+
+		search.fileList.SetItems(make([]*types.ListItem, 0))
+		go search.performSearch(searchContent)
+	}
+
+	search.filenameEntry.ConnectActivate(func() { doSearch() })
+	search.contentEntry.ConnectActivate(func() { doSearch() })
 
 	search.fileList = file_list.NewFileList(true, nil, nil)
-	search.fileList.PathChanged = func(path string) {
-		if search.PathChanged != nil {
-			search.PathChanged(filepath.Dir(path))
-		}
-	}
-	search.fileList.KeyRightPressed = func() {
-		if search.PathChanged != nil {
-			selectedItem := search.fileList.Items[search.fileList.SelectedIDX]
-			if !selectedItem.IsDir {
-				cmd := exec.Command("xdg-open", selectedItem.Path)
-				cmd.Start()
-			} else {
-				search.PathChanged(filepath.Dir(selectedItem.Path))
-			}
-		}
-	}
-	search.fileList.SetMinContentHeight(200)
-	search.fileList.SelectionChanged = func(index int) {
-	}
+	search.fileList.SetVExpand(true)
 
+	box.Append(search.ContentPanel)
 	box.Append(search.fileList)
 
 	return search
 }
 
-func (s *Search) performSearch() {
+func (s *Search) performSearch(searchContent bool) {
 	filename := s.filenameEntry.Text()
 	content := s.contentEntry.Text()
 
 	var cmd *exec.Cmd
 
-	if content == "" {
+	if !searchContent || content == "" {
 		cmd = exec.Command("find", s.path, "-name", "*"+filename+"*")
 	} else {
 		if filename == "" {

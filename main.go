@@ -37,13 +37,17 @@ type MainBox struct {
 	SpecialPaths   *special_path.SpecialPathManager
 	Search         *search.Search
 	SideBar        *sidebar.Sidebar
+	HeaderBar      *header.HeaderBar
 }
 
 func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) *MainBox {
 	splitView := adw.NewNavigationSplitView()
 	splitView.SetMaxSidebarWidth(250)
 	splitView.SetSidebarWidthFraction(0.22)
-	mainBox := &MainBox{NavigationSplitView: splitView}
+	mainBox := &MainBox{
+		NavigationSplitView: splitView,
+		HeaderBar:           headerBar,
+	}
 
 	curdir, err := os.Getwd()
 	if err != nil {
@@ -51,7 +55,17 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 	}
 
 	headerBar.SearchButton.ConnectClicked(func() {
-		mainBox.Search.SetVisible(!mainBox.Search.Visible())
+		isVisible := !mainBox.Search.Visible()
+		mainBox.Search.SetVisible(isVisible)
+		mainBox.Pathbar.SetVisible(!isVisible)
+		mainBox.ViewerPanel.SetVisible(!isVisible)
+		mainBox.PreviewerPanel.SetVisible(!isVisible)
+		
+		if isVisible {
+			headerBar.SetTitleWidget(mainBox.Search.SearchBar)
+		} else {
+			headerBar.SetTitleWidget(gtk.NewBox(gtk.OrientationHorizontal, 0))
+		}
 	})
 	headerBar.ShortcutsButton.ConnectClicked(func() {
 		shortcut_popup.NewShortcutPopup(&mainWindow.Window)
@@ -367,6 +381,15 @@ func (m *MainBox) pathChanged(path string) {
 	if path == "" {
 		path = m.Path
 	}
+
+	if m.Search.Visible() {
+		m.Search.SetVisible(false)
+		m.Pathbar.SetVisible(true)
+		m.ViewerPanel.SetVisible(true)
+		m.PreviewerPanel.SetVisible(true)
+		m.HeaderBar.SetTitleWidget(gtk.NewBox(gtk.OrientationHorizontal, 0))
+	}
+
 	specialPath := m.SpecialPaths.GetPath(path)
 	if specialPath != nil {
 		items := specialPath.GetItems()
