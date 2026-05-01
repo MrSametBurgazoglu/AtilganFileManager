@@ -36,10 +36,6 @@ func NewHeaderBar(mainWindow *adw.ApplicationWindow) *HeaderBar {
 	searchButton := gtk.NewButtonFromIconName("system-search-symbolic")
 	leftHeader.PackStart(searchButton)
 
-	atilganIcon := gtk.NewImageFromIconName("atilgan_icon")
-	atilganIcon.SetPixelSize(24)
-	leftHeader.PackStart(atilganIcon)
-
 	actionsButton := gtk.NewMenuButton()
 	actionsButton.SetIconName("open-menu-symbolic")
 	leftHeader.PackEnd(actionsButton)

@@ -13,8 +13,8 @@ headerbar, .headerbar {
     background-color: #181825;
     background-image: none;
     border-bottom: 1px solid #313244;
-    padding: 6px;
-    min-height: 52px;
+    padding: 4px;
+    min-height: 40px;
 }
 
 .left-header {
@@ -125,10 +125,10 @@ popover > box,
 }
 
 .sidebar-button {
-    padding: 8px 12px;
-    margin-bottom: 2px;
+    padding: 4px 8px;
+    margin-bottom: 1px;
     color: #bac2de;
-    min-height: 40px;
+    min-height: 30px;
 }
 
 .sidebar-button.selected {
