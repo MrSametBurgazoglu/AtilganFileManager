@@ -69,12 +69,11 @@ func NewDirPreviewer(path string, changePath func(string), specialPathManager *s
 		folderName:         gtk.NewLabel(""),
 		specialPathManager: specialPathManager,
 	}
-	viewer.FileViewerList.SetPropagateNaturalHeight(true)
+	viewer.FileViewerList.SetHExpand(true)
 	viewer.FileViewerList.SetVExpand(false)
-	viewer.FileViewerList.SetVAlign(gtk.AlignStart)
+	viewer.FileViewerList.SetPropagateNaturalHeight(true)
 	viewer.Box.SetVExpand(true)
 	viewer.Box.SetHExpand(true)
-	viewer.Box.SetVAlign(gtk.AlignFill)
 
 	headerBox := gtk.NewBox(gtk.OrientationHorizontal, 6)
 	headerBox.AddCSSClass("dir-previewer-header")
@@ -87,7 +86,7 @@ func NewDirPreviewer(path string, changePath func(string), specialPathManager *s
 	leftBox.Append(viewer.folderIcon)
 	leftBox.Append(viewer.folderName)
 
-	rightBox := gtk.NewBox(gtk.OrientationHorizontal, 0)
+	rightBox := gtk.NewBox(gtk.OrientationHorizontal, 6)
 	headerBox.Append(rightBox)
 
 	sortButton := gtk.NewButtonFromIconName("view-sort-descending-symbolic")
@@ -118,10 +117,14 @@ func NewDirPreviewer(path string, changePath func(string), specialPathManager *s
 	factory.ConnectSetup(func(o *glib.Object) {
 		item := o.Cast().(*gtk.ListItem)
 		box := gtk.NewBox(gtk.OrientationVertical, 6)
-		box.SetHExpand(false)
+		box.SetHExpand(true)
+		box.SetVExpand(true)
+		box.SetSizeRequest(100, 100)
 		image := gtk.NewImage()
 		image.SetPixelSize(64)
 		label := gtk.NewLabel("")
+		label.SetWrap(true)
+		label.SetMaxWidthChars(12)
 		box.Append(image)
 		box.Append(label)
 		item.SetChild(box)
@@ -152,13 +155,12 @@ func NewDirPreviewer(path string, changePath func(string), specialPathManager *s
 
 	viewer.gridView = gtk.NewGridView(gtk.NewSingleSelection(viewer.store), &factory.ListItemFactory)
 	viewer.gridView.SetVisible(false)
+	viewer.gridView.SetMaxColumns(4)
+	viewer.gridView.SetMinColumns(2)
 	scrolled := gtk.NewScrolledWindow()
 	scrolled.SetChild(viewer.gridView)
-	scrolled.SetMaxContentHeight(600)
-	scrolled.SetMaxContentWidth(325)
-	scrolled.SetHExpand(false)
-	scrolled.SetVExpand(false)
-	scrolled.SetVAlign(gtk.AlignStart)
+	scrolled.SetHExpand(true)
+	scrolled.SetVExpand(true)
 	viewer.stack.SetVExpand(true)
 	viewer.stack.SetHExpand(true)
 	viewer.stack.AddTitled(viewer.FileViewerList, "list", "List")

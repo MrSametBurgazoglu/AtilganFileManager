@@ -12,19 +12,19 @@ window {
 headerbar, .headerbar {
     background-color: #181825;
     background-image: none;
-    border-bottom: 1px solid #313244;
-    padding: 4px;
+    border-bottom: none;
+    padding: 0;
     min-height: 40px;
 }
 
 .left-header {
     background-color: #11111b; /* Matches sidebar */
-    border-bottom: 1px solid #313244;
+    border-bottom: none;
 }
 
 .right-header {
     background-color: #181825;
-    border-bottom: 1px solid #313244;
+    border-bottom: none;
 }
 
 .header-separator {
