@@ -2,7 +2,6 @@ package file_list
 
 import (
 	"fmt"
-	"math"
 	"os/exec"
 	"slices"
 	"strings"
@@ -19,8 +18,6 @@ import (
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
-
-
 
 const (
 	rowHeight    = 40
@@ -92,11 +89,15 @@ func NewFileList(canSelect bool, specialPathManager *special_path.SpecialPathMan
 				return true
 
 			case gdk.KEY_Left:
-				fl.KeyLeftPressed()
+				if fl.KeyLeftPressed != nil {
+					fl.KeyLeftPressed()
+				}
 				return true
 
 			case gdk.KEY_Right:
-				fl.KeyRightPressed()
+				if fl.KeyRightPressed != nil {
+					fl.KeyRightPressed()
+				}
 				return true
 
 			case gdk.KEY_Return:
@@ -105,7 +106,9 @@ func NewFileList(canSelect bool, specialPathManager *special_path.SpecialPathMan
 						cmd := exec.Command("xdg-open", fl.Items[fl.SelectedIDX].Path)
 						cmd.Start()
 					} else {
-						fl.KeyRightPressed()
+						if fl.KeyRightPressed != nil {
+							fl.KeyRightPressed()
+						}
 					}
 				}
 				return true
@@ -262,25 +265,6 @@ func (fl *FileList) selectItem(idx int) {
 	if fl.SelectionChanged != nil {
 		fl.SelectionChanged(fl.SelectedIDX)
 	}
-}
-
-func roundedRectangle(cr *cairo.Context, x, y, w, h, r float64) {
-	if w < 2*r {
-		r = w / 2
-	}
-	if h < 2*r {
-		r = h / 2
-	}
-	cr.MoveTo(x+r, y)
-	cr.LineTo(x+w-r, y)
-	cr.Arc(x+w-r, y+r, r, -math.Pi/2, 0)
-	cr.LineTo(x+w, y+h-r)
-	cr.Arc(x+w-r, y+h-r, r, 0, math.Pi/2)
-	cr.LineTo(x+r, y+h)
-	cr.Arc(x+r, y+h-r, r, math.Pi/2, math.Pi)
-	cr.LineTo(x, y+r)
-	cr.Arc(x+r, y+r, r, math.Pi, 3*math.Pi/2)
-	cr.ClosePath()
 }
 
 func (fl *FileList) drawHeader(cr *cairo.Context, text string, y int, w int) {

@@ -23,8 +23,18 @@ type SortOrder int
 const (
 	SortByName SortOrder = iota
 	SortByTime
-	SortBySize
-	SortByType
+)
+
+type FileType int
+
+const (
+	TypeDir FileType = iota
+	TypeExec
+	TypeHidden
+	TypeTemp
+	TypeOther
+	TypeDoc
+	TypeMedia
 )
 
 type DirPreviewer struct {
@@ -108,12 +118,12 @@ func NewDirPreviewer(path string, changePath func(string), specialPathManager *s
 		box := gtk.NewBox(gtk.OrientationVertical, 6)
 		box.SetHExpand(true)
 		box.SetVExpand(true)
-		box.SetSizeRequest(80, 80)
+		box.SetSizeRequest(100, 100)
 		image := gtk.NewImage()
-		image.SetPixelSize(48)
+		image.SetPixelSize(64)
 		label := gtk.NewLabel("")
 		label.SetWrap(true)
-		label.SetMaxWidthChars(10)
+		label.SetMaxWidthChars(12)
 		box.Append(image)
 		box.Append(label)
 		item.SetChild(box)
@@ -144,8 +154,8 @@ func NewDirPreviewer(path string, changePath func(string), specialPathManager *s
 
 	viewer.gridView = gtk.NewGridView(gtk.NewSingleSelection(viewer.store), &factory.ListItemFactory)
 	viewer.gridView.SetVisible(false)
-	viewer.gridView.SetMaxColumns(2)
-	viewer.gridView.SetMinColumns(1)
+	viewer.gridView.SetMaxColumns(4)
+	viewer.gridView.SetMinColumns(2)
 	scrolled := gtk.NewScrolledWindow()
 	scrolled.SetChild(viewer.gridView)
 	scrolled.SetHExpand(true)
@@ -262,17 +272,17 @@ func (viewer *DirPreviewer) Refresh(newFilter bool) {
 
 	var filteredEntries []os.DirEntry
 	for _, entry := range entries {
-		fileType := fileops.GetFileType(entry)
+		fileType := getFileType(entry)
 		show := false
-		if fileType == types.TypeDir {
+		if fileType == TypeDir {
 			if viewer.FiltersMap["Directories"] {
 				show = true
 			}
-		} else if fileType == types.TypeExec {
+		} else if fileType == TypeExec {
 			if viewer.FiltersMap["Executables"] {
 				show = true
 			}
-		} else if fileType == types.TypeHidden {
+		} else if fileType == TypeHidden {
 			if viewer.FiltersMap["Hidden"] {
 				show = true
 			}
@@ -299,26 +309,6 @@ func (viewer *DirPreviewer) Refresh(newFilter bool) {
 				return false
 			}
 			return infoI.ModTime().After(infoJ.ModTime())
-		case SortBySize:
-			if filteredEntries[i].IsDir() && !filteredEntries[j].IsDir() {
-				return true
-			}
-			if !filteredEntries[i].IsDir() && filteredEntries[j].IsDir() {
-				return false
-			}
-			infoI, _ := filteredEntries[i].Info()
-			infoJ, _ := filteredEntries[j].Info()
-			if infoI.Size() != infoJ.Size() {
-				return infoI.Size() > infoJ.Size()
-			}
-			return strings.Title(filteredEntries[i].Name()) < strings.Title(filteredEntries[j].Name())
-		case SortByType:
-			typeI := fileops.GetFileType(filteredEntries[i])
-			typeJ := fileops.GetFileType(filteredEntries[j])
-			if typeI != typeJ {
-				return typeI < typeJ
-			}
-			return strings.Title(filteredEntries[i].Name()) < strings.Title(filteredEntries[j].Name())
 		default:
 			return strings.Title(filteredEntries[i].Name()) < strings.Title(filteredEntries[j].Name())
 		}
@@ -326,11 +316,6 @@ func (viewer *DirPreviewer) Refresh(newFilter bool) {
 
 	newFiles := make([]*types.ListItem, 0)
 	viewer.store.RemoveAll()
-	var sizeThresholds []int64
-	if viewer.SortOrder == SortBySize {
-		sizeThresholds = fileops.CalculateSizeThresholds(filteredEntries)
-	}
-
 	for _, entry := range filteredEntries {
 		fullPath := filepath.Join(viewer.Path, entry.Name())
 		var group string
@@ -339,17 +324,8 @@ func (viewer *DirPreviewer) Refresh(newFilter bool) {
 			if err != nil {
 				group = "Unknown"
 			} else {
-				group = fileops.GetGroupForTime(info.ModTime())
+				group = getGroupForTime(info.ModTime())
 			}
-		} else if viewer.SortOrder == SortBySize {
-			if entry.IsDir() {
-				group = "Directories"
-			} else {
-				info, _ := entry.Info()
-				group = fileops.GetGroupForSize(info.Size(), sizeThresholds)
-			}
-		} else if viewer.SortOrder == SortByType {
-			group = fileops.GetGroupForType(entry)
 		} else {
 			name := entry.Name()
 			runes := []rune(strings.Title(name))
@@ -474,4 +450,38 @@ func getDirItemCount(dirPath string) int {
 		return 0
 	}
 	return len(entries)
+}
+
+func getFileType(entry os.DirEntry) FileType {
+	fileName := entry.Name()
+	if strings.HasPrefix(fileName, ".") {
+		return TypeHidden
+	}
+
+	if strings.HasPrefix(fileName, "~") {
+		return TypeTemp
+	}
+
+	if entry.IsDir() {
+		return TypeDir
+	}
+
+	info, err := entry.Info()
+	if err != nil {
+		return TypeOther
+	}
+
+	if info.Mode()&0111 != 0 {
+		return TypeExec
+	}
+
+	ext := strings.ToLower(filepath.Ext(fileName))
+	switch ext {
+	case ".doc", ".docx", ".pdf", ".txt", ".md":
+		return TypeDoc
+	case ".jpg", ".jpeg", ".png", ".gif", ".mp3", ".mp4", ".avi", ".mkv":
+		return TypeMedia
+	}
+
+	return TypeOther
 }

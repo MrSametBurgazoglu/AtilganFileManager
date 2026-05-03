@@ -47,7 +47,7 @@ type FileViewer struct {
 	IsCut              bool
 	FilterBox          *gtk.Box
 	FileViewerHistory  map[string]*FileViewHistory
-	FileViewerList     *file_list.FileList
+	FileViewerList     *file_list.FileGrid
 	stack              *gtk.Stack
 	specialPathManager *special_path.SpecialPathManager
 }
@@ -60,7 +60,7 @@ func NewFileViewer(mainWindow *gtk.Window, path string, pathChanged func(string)
 		SearchValue:        "",
 		FiltersMap:         make(map[string]bool),
 		FileViewerHistory:  make(map[string]*FileViewHistory),
-		FileViewerList:     file_list.NewFileList(true, specialPathManager, mainWindow),
+		FileViewerList:     file_list.NewFileGrid(true, specialPathManager, mainWindow),
 		DefaultFilters:     []string{"Directories", "Executables", "Hidden"},
 		specialPathManager: specialPathManager,
 		FilterBox:          gtk.NewBox(gtk.OrientationVertical, 6),

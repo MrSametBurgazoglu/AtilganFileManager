@@ -33,12 +33,12 @@ func NewHeaderBar(mainWindow *adw.ApplicationWindow) *HeaderBar {
 	// Set an empty widget to prevent the default window title from showing in the center
 	rightHeader.SetTitleWidget(gtk.NewBox(gtk.OrientationHorizontal, 0))
 
-	searchButton := gtk.NewButtonFromIconName("system-search-symbolic")
-	leftHeader.PackStart(searchButton)
-
 	actionsButton := gtk.NewMenuButton()
 	actionsButton.SetIconName("open-menu-symbolic")
 	leftHeader.PackEnd(actionsButton)
+
+	searchButton := gtk.NewButtonFromIconName("system-search-symbolic")
+	rightHeader.PackStart(searchButton)
 
 	circularProgressBar := NewCircularProgressBar()
 	circularProgressBar.SetVisible(false)

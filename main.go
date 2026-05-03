@@ -42,8 +42,8 @@ type MainBox struct {
 
 func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) *MainBox {
 	splitView := adw.NewNavigationSplitView()
-	splitView.SetMaxSidebarWidth(250)
-	splitView.SetSidebarWidthFraction(0.22)
+	splitView.SetMaxSidebarWidth(180)
+	splitView.SetSidebarWidthFraction(0.15)
 	mainBox := &MainBox{
 		NavigationSplitView: splitView,
 		HeaderBar:           headerBar,
@@ -97,7 +97,7 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 	sidebarScrolled.SetPolicy(gtk.PolicyNever, gtk.PolicyAutomatic)
 	sidebarToolbar.SetContent(sidebarScrolled)
 
-	sidebarPage := adw.NewNavigationPage(sidebarToolbar, "Sidebar")
+	sidebarPage := adw.NewNavigationPage(sidebarToolbar, "Atilgan")
 	splitView.SetSidebar(sidebarPage)
 
 	contentToolbar := adw.NewToolbarView()
