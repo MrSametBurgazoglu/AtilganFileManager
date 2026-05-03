@@ -37,7 +37,7 @@ func NewPreviewPanel(path string, changePath func(string), specialPathManager *s
 		specialPathManager: specialPathManager,
 	}
 	pp.AddCSSClass("preview-panel")
-	pp.SetHExpand(true)
+	// pp.SetHExpand(true)
 
 	emptyPreviewer := gtk.NewLabel("Empty Directory")
 	emptyPreviewer.AddCSSClass("preview-title")

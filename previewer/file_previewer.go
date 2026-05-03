@@ -37,7 +37,7 @@ func NewFilePreviewer() *FilePreviewer {
 	box.SetMarginEnd(16)
 
 	thumbnailImage := gtk.NewImage()
-	thumbnailImage.SetPixelSize(144)
+	thumbnailImage.SetPixelSize(96)
 	thumbnailImage.SetMarginBottom(8)
 
 	nameTitle := gtk.NewLabel("")
@@ -46,10 +46,13 @@ func NewFilePreviewer() *FilePreviewer {
 	nameTitle.AddCSSClass("preview-title")
 	nameTitle.SetHAlign(gtk.AlignCenter)
 
-	infoBox := gtk.NewBox(gtk.OrientationVertical, 12)
-	infoBox.AddCSSClass("preview-info-box")
-	infoBox.SetHAlign(gtk.AlignFill)
+	infoGrid := gtk.NewGrid()
+	infoGrid.AddCSSClass("preview-info-box")
+	infoGrid.SetHAlign(gtk.AlignFill)
+	infoGrid.SetColumnSpacing(12)
+	infoGrid.SetRowSpacing(8)
 
+	rowCount := 0
 	createRow := func(title string, valueWidget gtk.Widgetter) {
 		row := gtk.NewBox(gtk.OrientationHorizontal, 12)
 		titleLabel := gtk.NewLabel(title)
@@ -62,7 +65,9 @@ func NewFilePreviewer() *FilePreviewer {
 		row.Append(titleLabel)
 		row.Append(spacer)
 		row.Append(valueWidget)
-		infoBox.Append(row)
+		
+		infoGrid.Attach(row, 0, rowCount, 1, 1)
+		rowCount++
 	}
 
 	typeLabel := gtk.NewLabel("")
@@ -88,7 +93,7 @@ func NewFilePreviewer() *FilePreviewer {
 
 	box.Append(thumbnailImage)
 	box.Append(nameTitle)
-	box.Append(infoBox)
+	box.Append(infoGrid)
 
 	fp.Box = box
 	fp.NameLabel = nameTitle

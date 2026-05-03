@@ -23,18 +23,8 @@ type SortOrder int
 const (
 	SortByName SortOrder = iota
 	SortByTime
-)
-
-type FileType int
-
-const (
-	TypeDir FileType = iota
-	TypeExec
-	TypeHidden
-	TypeTemp
-	TypeOther
-	TypeDoc
-	TypeMedia
+	SortBySize
+	SortByType
 )
 
 type DirPreviewer struct {
@@ -52,6 +42,7 @@ type DirPreviewer struct {
 	store              *gio.ListStore
 	folderIcon         *gtk.Image
 	folderName         *gtk.Label
+	rightBox           *gtk.Box
 	specialPathManager *special_path.SpecialPathManager
 }
 
@@ -88,12 +79,10 @@ func NewDirPreviewer(path string, changePath func(string), specialPathManager *s
 
 	rightBox := gtk.NewBox(gtk.OrientationHorizontal, 6)
 	headerBox.Append(rightBox)
-
-	sortButton := gtk.NewButtonFromIconName("view-sort-descending-symbolic")
+	viewer.rightBox = rightBox
 
 	gridViewButton := gtk.NewButtonFromIconName("view-grid-symbolic")
 	rightBox.Append(gridViewButton)
-	rightBox.Append(sortButton)
 
 	filterButton := gtk.NewMenuButton()
 	filterButton.SetIconName("preferences-system-symbolic")
@@ -119,12 +108,12 @@ func NewDirPreviewer(path string, changePath func(string), specialPathManager *s
 		box := gtk.NewBox(gtk.OrientationVertical, 6)
 		box.SetHExpand(true)
 		box.SetVExpand(true)
-		box.SetSizeRequest(100, 100)
+		box.SetSizeRequest(80, 80)
 		image := gtk.NewImage()
-		image.SetPixelSize(64)
+		image.SetPixelSize(48)
 		label := gtk.NewLabel("")
 		label.SetWrap(true)
-		label.SetMaxWidthChars(12)
+		label.SetMaxWidthChars(10)
 		box.Append(image)
 		box.Append(label)
 		item.SetChild(box)
@@ -155,8 +144,8 @@ func NewDirPreviewer(path string, changePath func(string), specialPathManager *s
 
 	viewer.gridView = gtk.NewGridView(gtk.NewSingleSelection(viewer.store), &factory.ListItemFactory)
 	viewer.gridView.SetVisible(false)
-	viewer.gridView.SetMaxColumns(4)
-	viewer.gridView.SetMinColumns(2)
+	viewer.gridView.SetMaxColumns(2)
+	viewer.gridView.SetMinColumns(1)
 	scrolled := gtk.NewScrolledWindow()
 	scrolled.SetChild(viewer.gridView)
 	scrolled.SetHExpand(true)
@@ -186,15 +175,6 @@ func NewDirPreviewer(path string, changePath func(string), specialPathManager *s
 		}
 	})
 
-	sortButton.ConnectClicked(func() {
-		if viewer.SortOrder == SortByTime {
-			viewer.SortOrder = SortByName
-		} else {
-			viewer.SortOrder = SortByTime
-		}
-		viewer.Refresh(false)
-	})
-
 	viewer.Refresh(false)
 
 	return viewer
@@ -219,7 +199,9 @@ func (viewer *DirPreviewer) Refresh(newFilter bool) {
 		viewer.folderIcon.SetFromIconName(fileops.GetIconForFolderSymbolic(viewer.Path))
 		if len(items) == 0 {
 			viewer.stack.SetVisibleChildName("empty")
+			viewer.rightBox.SetVisible(false)
 		} else {
+			viewer.rightBox.SetVisible(true)
 			if viewer.gridView.Visible() {
 				viewer.stack.SetVisibleChildName("grid")
 			} else {
@@ -280,17 +262,17 @@ func (viewer *DirPreviewer) Refresh(newFilter bool) {
 
 	var filteredEntries []os.DirEntry
 	for _, entry := range entries {
-		fileType := getFileType(entry)
+		fileType := fileops.GetFileType(entry)
 		show := false
-		if fileType == TypeDir {
+		if fileType == types.TypeDir {
 			if viewer.FiltersMap["Directories"] {
 				show = true
 			}
-		} else if fileType == TypeExec {
+		} else if fileType == types.TypeExec {
 			if viewer.FiltersMap["Executables"] {
 				show = true
 			}
-		} else if fileType == TypeHidden {
+		} else if fileType == types.TypeHidden {
 			if viewer.FiltersMap["Hidden"] {
 				show = true
 			}
@@ -317,6 +299,26 @@ func (viewer *DirPreviewer) Refresh(newFilter bool) {
 				return false
 			}
 			return infoI.ModTime().After(infoJ.ModTime())
+		case SortBySize:
+			if filteredEntries[i].IsDir() && !filteredEntries[j].IsDir() {
+				return true
+			}
+			if !filteredEntries[i].IsDir() && filteredEntries[j].IsDir() {
+				return false
+			}
+			infoI, _ := filteredEntries[i].Info()
+			infoJ, _ := filteredEntries[j].Info()
+			if infoI.Size() != infoJ.Size() {
+				return infoI.Size() > infoJ.Size()
+			}
+			return strings.Title(filteredEntries[i].Name()) < strings.Title(filteredEntries[j].Name())
+		case SortByType:
+			typeI := fileops.GetFileType(filteredEntries[i])
+			typeJ := fileops.GetFileType(filteredEntries[j])
+			if typeI != typeJ {
+				return typeI < typeJ
+			}
+			return strings.Title(filteredEntries[i].Name()) < strings.Title(filteredEntries[j].Name())
 		default:
 			return strings.Title(filteredEntries[i].Name()) < strings.Title(filteredEntries[j].Name())
 		}
@@ -324,6 +326,11 @@ func (viewer *DirPreviewer) Refresh(newFilter bool) {
 
 	newFiles := make([]*types.ListItem, 0)
 	viewer.store.RemoveAll()
+	var sizeThresholds []int64
+	if viewer.SortOrder == SortBySize {
+		sizeThresholds = fileops.CalculateSizeThresholds(filteredEntries)
+	}
+
 	for _, entry := range filteredEntries {
 		fullPath := filepath.Join(viewer.Path, entry.Name())
 		var group string
@@ -332,8 +339,17 @@ func (viewer *DirPreviewer) Refresh(newFilter bool) {
 			if err != nil {
 				group = "Unknown"
 			} else {
-				group = getGroupForTime(info.ModTime())
+				group = fileops.GetGroupForTime(info.ModTime())
 			}
+		} else if viewer.SortOrder == SortBySize {
+			if entry.IsDir() {
+				group = "Directories"
+			} else {
+				info, _ := entry.Info()
+				group = fileops.GetGroupForSize(info.Size(), sizeThresholds)
+			}
+		} else if viewer.SortOrder == SortByType {
+			group = fileops.GetGroupForType(entry)
 		} else {
 			name := entry.Name()
 			runes := []rune(strings.Title(name))
@@ -363,7 +379,9 @@ func (viewer *DirPreviewer) Refresh(newFilter bool) {
 
 	if len(newFiles) == 0 {
 		viewer.stack.SetVisibleChildName("empty")
+		viewer.rightBox.SetVisible(false)
 	} else {
+		viewer.rightBox.SetVisible(true)
 		if viewer.gridView.Visible() {
 			viewer.stack.SetVisibleChildName("grid")
 		} else {
@@ -378,21 +396,12 @@ func (viewer *DirPreviewer) UpdateFilterPopover() {
 		popoverBox.Remove(child)
 	}
 
-	for _, filter := range viewer.DefaultFilters {
-		checkButton := gtk.NewCheckButtonWithLabel(filter)
-		checkButton.SetActive(viewer.FiltersMap[filter])
-		filterName := filter
-		checkButton.ConnectToggled(func() {
-			viewer.FiltersMap[filterName] = checkButton.Active()
-			viewer.UpdateFilterPopover()
-			viewer.Refresh(false)
-		})
-		popoverBox.Append(checkButton)
-	}
-	seperator := gtk.NewSeparator(gtk.OrientationHorizontal)
-	popoverBox.Append(seperator)
+	defaultGrid := gtk.NewGrid()
+	defaultGrid.SetColumnSpacing(12)
+	defaultGrid.SetRowSpacing(6)
+	popoverBox.Append(defaultGrid)
 
-	for _, filter := range viewer.Filters {
+	for i, filter := range viewer.DefaultFilters {
 		checkButton := gtk.NewCheckButtonWithLabel(filter)
 		checkButton.SetActive(viewer.FiltersMap[filter])
 		filterName := filter
@@ -401,7 +410,29 @@ func (viewer *DirPreviewer) UpdateFilterPopover() {
 			viewer.UpdateFilterPopover()
 			viewer.Refresh(false)
 		})
-		popoverBox.Append(checkButton)
+		defaultGrid.Attach(checkButton, i%2, i/2, 1, 1)
+	}
+
+	if len(viewer.Filters) > 0 {
+		seperator := gtk.NewSeparator(gtk.OrientationHorizontal)
+		popoverBox.Append(seperator)
+
+		filterGrid := gtk.NewGrid()
+		filterGrid.SetColumnSpacing(12)
+		filterGrid.SetRowSpacing(6)
+		popoverBox.Append(filterGrid)
+
+		for i, filter := range viewer.Filters {
+			checkButton := gtk.NewCheckButtonWithLabel(filter)
+			checkButton.SetActive(viewer.FiltersMap[filter])
+			filterName := filter
+			checkButton.ConnectToggled(func() {
+				viewer.FiltersMap[filterName] = checkButton.Active()
+				viewer.UpdateFilterPopover()
+				viewer.Refresh(false)
+			})
+			filterGrid.Attach(checkButton, i%2, i/2, 1, 1)
+		}
 	}
 }
 
@@ -443,38 +474,4 @@ func getDirItemCount(dirPath string) int {
 		return 0
 	}
 	return len(entries)
-}
-
-func getFileType(entry os.DirEntry) FileType {
-	fileName := entry.Name()
-	if strings.HasPrefix(fileName, ".") {
-		return TypeHidden
-	}
-
-	if strings.HasPrefix(fileName, "~") {
-		return TypeTemp
-	}
-
-	if entry.IsDir() {
-		return TypeDir
-	}
-
-	info, err := entry.Info()
-	if err != nil {
-		return TypeOther
-	}
-
-	if info.Mode()&0111 != 0 {
-		return TypeExec
-	}
-
-	ext := strings.ToLower(filepath.Ext(fileName))
-	switch ext {
-	case ".doc", ".docx", ".pdf", ".txt", ".md":
-		return TypeDoc
-	case ".jpg", ".jpeg", ".png", ".gif", ".mp3", ".mp4", ".avi", ".mkv":
-		return TypeMedia
-	}
-
-	return TypeOther
 }

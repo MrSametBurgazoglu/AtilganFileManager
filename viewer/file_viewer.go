@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/MrSametBurgazoglu/atilgan/file_list"
 	"github.com/MrSametBurgazoglu/atilgan/fileops"
@@ -24,18 +23,8 @@ type SortOrder int
 const (
 	SortByName SortOrder = iota
 	SortByTime
-)
-
-type FileType int
-
-const (
-	TypeDir FileType = iota
-	TypeExec
-	TypeHidden
-	TypeTemp
-	TypeOther
-	TypeDoc
-	TypeMedia
+	SortBySize
+	SortByType
 )
 
 type FileViewHistory struct {
@@ -201,17 +190,17 @@ func (viewer *FileViewer) Refresh(newFilter bool) {
 				continue
 			}
 		}
-		fileType := getFileType(entry)
+		fileType := fileops.GetFileType(entry)
 		show := false
-		if fileType == TypeDir {
+		if fileType == types.TypeDir {
 			if viewer.FiltersMap["Directories"] {
 				show = true
 			}
-		} else if fileType == TypeExec {
+		} else if fileType == types.TypeExec {
 			if viewer.FiltersMap["Executables"] {
 				show = true
 			}
-		} else if fileType == TypeHidden {
+		} else if fileType == types.TypeHidden {
 			if viewer.FiltersMap["Hidden"] {
 				show = true
 			}
@@ -238,12 +227,37 @@ func (viewer *FileViewer) Refresh(newFilter bool) {
 				return false
 			}
 			return infoI.ModTime().After(infoJ.ModTime())
+		case SortBySize:
+			if filteredEntries[i].IsDir() && !filteredEntries[j].IsDir() {
+				return true
+			}
+			if !filteredEntries[i].IsDir() && filteredEntries[j].IsDir() {
+				return false
+			}
+			infoI, _ := filteredEntries[i].Info()
+			infoJ, _ := filteredEntries[j].Info()
+			if infoI.Size() != infoJ.Size() {
+				return infoI.Size() > infoJ.Size()
+			}
+			return strings.Title(filteredEntries[i].Name()) < strings.Title(filteredEntries[j].Name())
+		case SortByType:
+			typeI := fileops.GetFileType(filteredEntries[i])
+			typeJ := fileops.GetFileType(filteredEntries[j])
+			if typeI != typeJ {
+				return typeI < typeJ
+			}
+			return strings.Title(filteredEntries[i].Name()) < strings.Title(filteredEntries[j].Name())
 		default:
 			return strings.Title(filteredEntries[i].Name()) < strings.Title(filteredEntries[j].Name())
 		}
 	})
 
 	newFiles := make([]*types.ListItem, 0)
+	var sizeThresholds []int64
+	if viewer.SortOrder == SortBySize {
+		sizeThresholds = fileops.CalculateSizeThresholds(filteredEntries)
+	}
+
 	for _, entry := range filteredEntries {
 		fullPath := path.Join(viewer.Path, entry.Name())
 		var group string
@@ -252,8 +266,17 @@ func (viewer *FileViewer) Refresh(newFilter bool) {
 			if err != nil {
 				group = "Unknown"
 			} else {
-				group = getGroupForTime(info.ModTime())
+				group = fileops.GetGroupForTime(info.ModTime())
 			}
+		} else if viewer.SortOrder == SortBySize {
+			if entry.IsDir() {
+				group = "Directories"
+			} else {
+				info, _ := entry.Info()
+				group = fileops.GetGroupForSize(info.Size(), sizeThresholds)
+			}
+		} else if viewer.SortOrder == SortByType {
+			group = fileops.GetGroupForType(entry)
 		} else {
 			name := entry.Name()
 			runes := []rune(strings.Title(name))
@@ -291,7 +314,12 @@ func (viewer *FileViewer) UpdateFilterPopover() {
 		popoverBox.Remove(child)
 	}
 
-	for _, filter := range viewer.DefaultFilters {
+	defaultGrid := gtk.NewGrid()
+	defaultGrid.SetColumnSpacing(12)
+	defaultGrid.SetRowSpacing(6)
+	popoverBox.Append(defaultGrid)
+
+	for i, filter := range viewer.DefaultFilters {
 		checkButton := gtk.NewCheckButtonWithLabel(filter)
 		checkButton.SetActive(viewer.FiltersMap[filter])
 		filterName := filter
@@ -300,46 +328,30 @@ func (viewer *FileViewer) UpdateFilterPopover() {
 			viewer.UpdateFilterPopover()
 			viewer.Refresh(false)
 		})
-		popoverBox.Append(checkButton)
-	}
-	seperator := gtk.NewSeparator(gtk.OrientationHorizontal)
-	popoverBox.Append(seperator)
-
-	for _, filter := range viewer.Filters {
-		checkButton := gtk.NewCheckButtonWithLabel(filter)
-		checkButton.SetActive(viewer.FiltersMap[filter])
-		filterName := filter
-		checkButton.ConnectToggled(func() {
-			viewer.FiltersMap[filterName] = checkButton.Active()
-			viewer.UpdateFilterPopover()
-			viewer.Refresh(false)
-		})
-		popoverBox.Append(checkButton)
-	}
-}
-
-func getGroupForTime(modTime time.Time) string {
-	now := time.Now()
-	duration := now.Sub(modTime)
-
-	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	if modTime.After(todayStart) {
-		return "Today"
+		defaultGrid.Attach(checkButton, i%2, i/2, 1, 1)
 	}
 
-	if duration.Hours() <= 24 {
-		return "Last 24 hours"
-	}
+	if len(viewer.Filters) > 0 {
+		seperator := gtk.NewSeparator(gtk.OrientationHorizontal)
+		popoverBox.Append(seperator)
 
-	if duration.Hours() <= 24*7 {
-		return "Last Week"
-	}
+		filterGrid := gtk.NewGrid()
+		filterGrid.SetColumnSpacing(12)
+		filterGrid.SetRowSpacing(6)
+		popoverBox.Append(filterGrid)
 
-	if duration.Hours() <= 24*30 {
-		return "Last Month"
+		for i, filter := range viewer.Filters {
+			checkButton := gtk.NewCheckButtonWithLabel(filter)
+			checkButton.SetActive(viewer.FiltersMap[filter])
+			filterName := filter
+			checkButton.ConnectToggled(func() {
+				viewer.FiltersMap[filterName] = checkButton.Active()
+				viewer.UpdateFilterPopover()
+				viewer.Refresh(false)
+			})
+			filterGrid.Attach(checkButton, i%2, i/2, 1, 1)
+		}
 	}
-
-	return "Later"
 }
 
 func getDirItemCount(dirPath string) int {
@@ -349,40 +361,6 @@ func getDirItemCount(dirPath string) int {
 	}
 
 	return len(entries)
-}
-
-func getFileType(entry os.DirEntry) FileType {
-	fileName := entry.Name()
-	if strings.HasPrefix(fileName, ".") {
-		return TypeHidden
-	}
-
-	if strings.HasPrefix(fileName, "~") {
-		return TypeTemp
-	}
-
-	if entry.IsDir() {
-		return TypeDir
-	}
-
-	info, err := entry.Info()
-	if err != nil {
-		return TypeOther
-	}
-
-	if info.Mode()&0111 != 0 {
-		return TypeExec
-	}
-
-	ext := strings.ToLower(filepath.Ext(fileName))
-	switch ext {
-	case ".doc", ".docx", ".pdf", ".txt", ".md":
-		return TypeDoc
-	case ".jpg", ".jpeg", ".png", ".gif", ".mp3", ".mp4", ".avi", ".mkv":
-		return TypeMedia
-	}
-
-	return TypeOther
 }
 
 func (viewer *FileViewer) CleanCopyCutFiles() {

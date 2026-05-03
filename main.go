@@ -109,7 +109,7 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 	contentPaned := gtk.NewPaned(gtk.OrientationHorizontal)
 	contentPaned.SetHExpand(true)
 	contentPaned.SetVExpand(true)
-	contentPaned.SetPosition(800)
+	contentPaned.SetPosition(950)
 	contentPaned.SetWideHandle(true)
 	contentVBox.Append(contentPaned)
 	
@@ -150,7 +150,7 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 		rightBox.SetVisible(isVisible)
 		w, h := mainWindow.Width(), mainWindow.Height()
 		if isVisible {
-			contentPaned.SetPosition(800)
+			contentPaned.SetPosition(950)
 			mainWindow.SetDefaultSize(w+215, h)
 		} else {
 			mainWindow.SetDefaultSize(w-215, h)
@@ -452,18 +452,24 @@ func (m *MainBox) setupActionsMenu(mainWindow *adw.ApplicationWindow, headerBar 
 	actionsLabel.SetHAlign(gtk.AlignStart)
 	actionsBox.Append(actionsLabel)
 
-	actionsBox.Append(createActionBtn("document-new-symbolic", "New File", func() {
+	createBox := gtk.NewBox(gtk.OrientationHorizontal, 4)
+	createBox.SetHomogeneous(true)
+
+	createBox.Append(createActionBtn("document-new-symbolic", "New File", func() {
 		fs := create_popup.NewFileSelector(m.Path, m.pathChanged)
 		fs.SetVisible(true)
 		fs.SetTransientFor(&mainWindow.Window)
 		fs.SetModal(true)
 	}))
-	actionsBox.Append(createActionBtn("folder-new-symbolic", "New Folder", func() {
+	createBox.Append(createActionBtn("folder-new-symbolic", "New Folder", func() {
 		ds := create_popup.NewDirectorySelector(m.Path, m.pathChanged)
 		ds.SetVisible(true)
 		ds.SetTransientFor(&mainWindow.Window)
 		ds.SetModal(true)
 	}))
+	actionsBox.Append(createBox)
+	actionsBox.Append(gtk.NewSeparator(gtk.OrientationHorizontal))
+
 	actionsBox.Append(createActionBtn("utilities-terminal-symbolic", "Open Terminal", func() {
 		m.ViewerPanel.FileViewer.OpenTerminal()
 	}))
@@ -481,7 +487,9 @@ func (m *MainBox) setupActionsMenu(mainWindow *adw.ApplicationWindow, headerBar 
 	
 	sortNameBtn := gtk.NewButtonWithLabel("Name")
 	sortTimeBtn := gtk.NewButtonWithLabel("Time")
-	
+	sortSizeBtn := gtk.NewButtonWithLabel("Size")
+	sortTypeBtn := gtk.NewButtonWithLabel("Type")
+
 	sortNameBtn.ConnectClicked(func() {
 		m.ViewerPanel.FileViewer.SortOrder = viewer.SortByName
 		m.ViewerPanel.FileViewer.Refresh(false)
@@ -492,11 +500,25 @@ func (m *MainBox) setupActionsMenu(mainWindow *adw.ApplicationWindow, headerBar 
 		m.ViewerPanel.FileViewer.Refresh(false)
 		actionsPopover.Popdown()
 	})
-	
+	sortSizeBtn.ConnectClicked(func() {
+		m.ViewerPanel.FileViewer.SortOrder = viewer.SortBySize
+		m.ViewerPanel.FileViewer.Refresh(false)
+		actionsPopover.Popdown()
+	})
+	sortTypeBtn.ConnectClicked(func() {
+		m.ViewerPanel.FileViewer.SortOrder = viewer.SortByType
+		m.ViewerPanel.FileViewer.Refresh(false)
+		actionsPopover.Popdown()
+	})
+
 	sortBox.Append(sortNameBtn)
 	sortBox.Append(sortTimeBtn)
+	sortBox.Append(sortSizeBtn)
+	sortBox.Append(sortTypeBtn)
 	sortNameBtn.SetHExpand(true)
 	sortTimeBtn.SetHExpand(true)
+	sortSizeBtn.SetHExpand(true)
+	sortTypeBtn.SetHExpand(true)
 	actionsBox.Append(sortBox)
 
 	actionsBox.Append(gtk.NewSeparator(gtk.OrientationHorizontal))

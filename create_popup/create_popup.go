@@ -22,6 +22,10 @@ func NewCreatePopover(mainWindow *gtk.Window, pathChanged func(string)) *CreateP
 	box.SetMarginEnd(4)
 	popover.SetChild(box)
 
+	createBox := gtk.NewBox(gtk.OrientationHorizontal, 4)
+	createBox.SetHomogeneous(true)
+	box.Append(createBox)
+
 	createButton := func(iconName, labelText string, action func()) *gtk.Button {
 		btn := gtk.NewButton()
 		btn.AddCSSClass("flat")
@@ -53,7 +57,7 @@ func NewCreatePopover(mainWindow *gtk.Window, pathChanged func(string)) *CreateP
 		fileSelector.SetTransientFor(mainWindow)
 		fileSelector.SetModal(true)
 	})
-	box.Append(newFileButton)
+	createBox.Append(newFileButton)
 
 	newDirectoryButton := createButton("folder-new-symbolic", "New Folder", func() {
 		dirSelector := NewDirectorySelector(cp.CurrentPath, pathChanged)
@@ -61,7 +65,7 @@ func NewCreatePopover(mainWindow *gtk.Window, pathChanged func(string)) *CreateP
 		dirSelector.SetTransientFor(mainWindow)
 		dirSelector.SetModal(true)
 	})
-	box.Append(newDirectoryButton)
+	createBox.Append(newDirectoryButton)
 	
 	cp.Popover = popover
 	cp.NewFileButton = newFileButton
