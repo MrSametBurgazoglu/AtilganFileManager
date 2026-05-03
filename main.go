@@ -218,17 +218,26 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 	}))
 	controller.AddShortcut(searchShortcut)
 
+	selectAllTrigger := gtk.NewKeyvalTrigger(gdk.KEY_a, gdk.ControlMask)
+	selectAllShortcut := gtk.NewShortcut(selectAllTrigger, gtk.NewCallbackAction(func(widget gtk.Widgetter, args *glib.Variant) (ok bool) {
+		mainBox.ViewerPanel.FileViewer.FileViewerList.SelectAll()
+		return true
+	}))
+	controller.AddShortcut(selectAllShortcut)
+
 	copyTrigger := gtk.NewKeyvalTrigger(gdk.KEY_c, gdk.ControlMask)
 	copyShortcut := gtk.NewShortcut(copyTrigger, gtk.NewCallbackAction(func(widget gtk.Widgetter, args *glib.Variant) (ok bool) {
 		if mainBox.SpecialPaths.Paths[mainBox.Path] != nil {
 			return true
 		}
 		mainBox.ViewerPanel.FileViewer.IsCopy = true
-		mainBox.ViewerPanel.FileViewer.AddCopyCutItem(mainBox.ViewerPanel.FileViewer.FileViewerList.SelectedIDX)
+		mainBox.ViewerPanel.FileViewer.AddSelectedToCopyCut()
 
 		copyCutPreviewer.IsCut = false
 		copyCutPreviewer.SetFiles(mainBox.ViewerPanel.FileViewer.CopiedCuttedFiles)
 		copyCutPreviewer.SetVisible(true)
+		
+		// For now, still just copy the primary focused file to system clipboard
 		clipboard.CopyFileToClipboard(gio.NewFileForPath(mainBox.ViewerPanel.FileViewer.FileViewerList.Items[mainBox.ViewerPanel.FileViewer.FileViewerList.SelectedIDX].Path))
 		return true
 	}))
@@ -241,7 +250,7 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 		}
 		mainBox.ViewerPanel.FileViewer.IsCopy = true
 		mainBox.ViewerPanel.FileViewer.IsCut = true
-		mainBox.ViewerPanel.FileViewer.AddCopyCutItem(mainBox.ViewerPanel.FileViewer.FileViewerList.SelectedIDX)
+		mainBox.ViewerPanel.FileViewer.AddSelectedToCopyCut()
 		copyCutPreviewer.IsCut = true
 		copyCutPreviewer.SetFiles(mainBox.ViewerPanel.FileViewer.CopiedCuttedFiles)
 		copyCutPreviewer.SetVisible(true)

@@ -43,6 +43,7 @@ type FileGrid struct {
 	*gtk.ScrolledWindow
 	Items              []*types.ListItem
 	SelectedIDX        int
+	SelectedIdxs       map[int]bool
 	HoverIDX           int
 	DrawingArea        *gtk.DrawingArea
 	iconTheme          *gtk.IconTheme
@@ -65,6 +66,7 @@ func NewFileGrid(canSelect bool, specialPathManager *special_path.SpecialPathMan
 	fl := &FileGrid{
 		ScrolledWindow:     gtk.NewScrolledWindow(),
 		SelectedIDX:        0,
+		SelectedIdxs:       make(map[int]bool),
 		HoverIDX:           -1,
 		DrawingArea:        gtk.NewDrawingArea(),
 		iconTheme:          gtk.IconThemeGetForDisplay(gdk.DisplayGetDefault()),
@@ -106,22 +108,48 @@ func NewFileGrid(canSelect bool, specialPathManager *special_path.SpecialPathMan
 
 			switch keyval {
 			case gdk.KEY_Up:
-				fl.navigateUp()
+				if state&gdk.ShiftMask != 0 {
+					// Handle Shift+Up for range selection is more complex in navigateUp
+					// For now let's just do a simple expansion
+					fl.navigateUp()
+					fl.SelectedIdxs[fl.SelectedIDX] = true
+				} else {
+					fl.navigateUp()
+				}
 				return true
 
 			case gdk.KEY_Down:
-				fl.navigateDown()
+				if state&gdk.ShiftMask != 0 {
+					fl.navigateDown()
+					fl.SelectedIdxs[fl.SelectedIDX] = true
+				} else {
+					fl.navigateDown()
+				}
 				return true
 
 			case gdk.KEY_Left:
 				if fl.SelectedIDX > 0 {
-					fl.selectItem(fl.SelectedIDX - 1)
+					if state&gdk.ShiftMask != 0 {
+						fl.SelectedIDX--
+						fl.SelectedIdxs[fl.SelectedIDX] = true
+						fl.ensureVisible()
+						fl.DrawingArea.QueueDraw()
+					} else {
+						fl.selectItem(fl.SelectedIDX - 1)
+					}
 				}
 				return true
 
 			case gdk.KEY_Right:
 				if fl.SelectedIDX < len(fl.Items)-1 {
-					fl.selectItem(fl.SelectedIDX + 1)
+					if state&gdk.ShiftMask != 0 {
+						fl.SelectedIDX++
+						fl.SelectedIdxs[fl.SelectedIDX] = true
+						fl.ensureVisible()
+						fl.DrawingArea.QueueDraw()
+					} else {
+						fl.selectItem(fl.SelectedIDX + 1)
+					}
 				}
 				return true
 
@@ -162,6 +190,10 @@ func NewFileGrid(canSelect bool, specialPathManager *special_path.SpecialPathMan
 func (fl *FileGrid) SetItems(items []*types.ListItem) {
 	fl.Items = items
 	fl.SelectedIDX = 0
+	fl.SelectedIdxs = make(map[int]bool)
+	if len(items) > 0 {
+		fl.SelectedIdxs[0] = true
+	}
 	fl.HoverIDX = -1
 	fl.textureCache = make(map[string]*gdk.Texture)
 	fl.DrawingArea.QueueDraw()
@@ -184,8 +216,25 @@ func (fl *FileGrid) SetSelectedItemWithLetter(letter string) {
 func (fl *FileGrid) SetItem(index int) {
 	if index >= 0 && index < len(fl.Items) {
 		fl.SelectedIDX = index
+		fl.SelectedIdxs = make(map[int]bool)
+		fl.SelectedIdxs[index] = true
 		fl.DrawingArea.QueueDraw()
 	}
+}
+
+func (fl *FileGrid) SelectAll() {
+	for i := range fl.Items {
+		fl.SelectedIdxs[i] = true
+	}
+	fl.DrawingArea.QueueDraw()
+}
+
+func (fl *FileGrid) ClearSelection() {
+	fl.SelectedIdxs = make(map[int]bool)
+	if len(fl.Items) > 0 {
+		fl.SelectedIdxs[fl.SelectedIDX] = true
+	}
+	fl.DrawingArea.QueueDraw()
 }
 
 func (fl *FileGrid) AddCopyCutItem(path string) bool {
@@ -335,7 +384,8 @@ func (fl *FileGrid) layoutCategories(w int) ([]Category, int) {
 
 func (fl *FileGrid) drawGridItem(cr *cairo.Context, idx int, item *types.ListItem, x, y int) {
 	padding := 6.0
-	isSelected := idx == fl.SelectedIDX && fl.canSelect
+	isSelected := fl.SelectedIdxs[idx] && fl.canSelect
+	isFocused := idx == fl.SelectedIDX && fl.canSelect
 	isHovered := idx == fl.HoverIDX && fl.canSelect
 
 	if isSelected {
@@ -343,10 +393,12 @@ func (fl *FileGrid) drawGridItem(cr *cairo.Context, idx int, item *types.ListIte
 		roundedRectangle(cr, float64(x)+padding, float64(y)+padding, float64(gridItemWidth)-2*padding, float64(gridItemHeight)-2*padding, 10)
 		cr.Fill()
 
-		cr.SetSourceRGBA(float64(fl.colorTheme.AccentColor.Red()), float64(fl.colorTheme.AccentColor.Green()), float64(fl.colorTheme.AccentColor.Blue()), 0.8)
-		cr.SetLineWidth(2)
-		roundedRectangle(cr, float64(x)+padding, float64(y)+padding, float64(gridItemWidth)-2*padding, float64(gridItemHeight)-2*padding, 10)
-		cr.Stroke()
+		if isFocused {
+			cr.SetSourceRGBA(float64(fl.colorTheme.AccentColor.Red()), float64(fl.colorTheme.AccentColor.Green()), float64(fl.colorTheme.AccentColor.Blue()), 0.8)
+			cr.SetLineWidth(2)
+			roundedRectangle(cr, float64(x)+padding, float64(y)+padding, float64(gridItemWidth)-2*padding, float64(gridItemHeight)-2*padding, 10)
+			cr.Stroke()
+		}
 	} else if isHovered {
 		cr.SetSourceRGBA(float64(fl.colorTheme.HoverBgColor.Red()), float64(fl.colorTheme.HoverBgColor.Green()), float64(fl.colorTheme.HoverBgColor.Blue()), 0.3)
 		roundedRectangle(cr, float64(x)+padding, float64(y)+padding, float64(gridItemWidth)-2*padding, float64(gridItemHeight)-2*padding, 10)
@@ -552,6 +604,8 @@ func (fl *FileGrid) selectItem(idx int) {
 		return
 	}
 	fl.SelectedIDX = idx
+	fl.SelectedIdxs = make(map[int]bool)
+	fl.SelectedIdxs[idx] = true
 	fl.ensureVisible()
 	fl.DrawingArea.QueueDraw()
 	if fl.SelectionChanged != nil {
@@ -638,7 +692,27 @@ func (fl *FileGrid) newGestureClick(da *gtk.DrawingArea) *gtk.GestureClick {
 	click.ConnectPressed(func(n int, x, y float64) {
 		idx := fl.ItemAt(int(x), int(y))
 		if idx >= 0 {
-			fl.selectItem(idx)
+			state := click.CurrentEventState()
+			
+			if state&gdk.ControlMask != 0 {
+				// Toggle selection
+				fl.SelectedIDX = idx
+				fl.SelectedIdxs[idx] = !fl.SelectedIdxs[idx]
+			} else if state&gdk.ShiftMask != 0 {
+				// Range selection
+				start := fl.SelectedIDX
+				end := idx
+				if start > end {
+					start, end = end, start
+				}
+				for i := start; i <= end; i++ {
+					fl.SelectedIdxs[i] = true
+				}
+				fl.SelectedIDX = idx
+			} else {
+				// Single selection
+				fl.selectItem(idx)
+			}
 
 			if click.CurrentButton() == gdk.BUTTON_PRIMARY && n == 2 {
 				if !fl.Items[idx].IsDir {
@@ -650,6 +724,10 @@ func (fl *FileGrid) newGestureClick(da *gtk.DrawingArea) *gtk.GestureClick {
 					}
 				}
 			}
+			fl.DrawingArea.QueueDraw()
+		} else {
+			// Clicked on empty space
+			fl.ClearSelection()
 		}
 	})
 	return click
@@ -660,57 +738,65 @@ func (fl *FileGrid) newContextMenuController(da *gtk.DrawingArea) *gtk.GestureCl
 	click.SetButton(gdk.BUTTON_SECONDARY)
 	click.ConnectPressed(func(n int, x, y float64) {
 		idx := fl.ItemAt(int(x), int(y))
-		if idx < 0 {
-			return
-		}
 
 		pop := gtk.NewPopover()
 		popoverBox := gtk.NewBox(gtk.OrientationVertical, 6)
 		pop.SetChild(popoverBox)
 
-		open := gtk.NewButtonWithLabel("Open")
-		open.Connect("clicked", func() {
-			if !fl.Items[idx].IsDir {
-				cmd := exec.Command("xdg-open", fl.Items[idx].Path)
-				cmd.Start()
-			} else {
-				if fl.PathChanged != nil {
-					fl.PathChanged(fl.Items[idx].Path)
-				}
-				pop.Popdown()
+		if idx >= 0 {
+			if !fl.SelectedIdxs[idx] {
+				fl.selectItem(idx)
 			}
-		})
 
-		delete := gtk.NewButtonWithLabel("Delete")
-		delete.Connect("clicked", func() {
-			cmd := exec.Command("gio", "trash", fl.Items[idx].Path)
-			err := cmd.Start()
-			if err != nil {
-				println("couldn't delete file")
-				return
-			}
-			go func() {
-				cmd.Wait()
+			open := gtk.NewButtonWithLabel("Open")
+			open.Connect("clicked", func() {
+				if !fl.Items[idx].IsDir {
+					cmd := exec.Command("xdg-open", fl.Items[idx].Path)
+					cmd.Start()
+				} else {
+					if fl.PathChanged != nil {
+						fl.PathChanged(fl.Items[idx].Path)
+					}
+					pop.Popdown()
+				}
+			})
+
+			delete := gtk.NewButtonWithLabel("Delete Selected")
+			delete.Connect("clicked", func() {
+				for i, selected := range fl.SelectedIdxs {
+					if selected {
+						cmd := exec.Command("gio", "trash", fl.Items[i].Path)
+						cmd.Run()
+					}
+				}
 				glib.IdleAdd(func() {
 					if fl.PathChanged != nil {
 						fl.PathChanged("")
 					}
 					pop.Popdown()
 				})
-			}()
-			print("Delete clicked")
-		})
+			})
 
-		addTag := gtk.NewButtonWithLabel("Add Tag")
-		addTag.Connect("clicked", func() {
-			tagPopup := tag_popup.NewTagPopup(fl.parent, fl.specialPathManager.GetTagManager(), fl.Items[idx].Path)
-			tagPopup.Show()
+			addTag := gtk.NewButtonWithLabel("Add Tag")
+			addTag.Connect("clicked", func() {
+				tagPopup := tag_popup.NewTagPopup(fl.parent, fl.specialPathManager.GetTagManager(), fl.Items[idx].Path)
+				tagPopup.Show()
+				pop.Popdown()
+			})
+
+			popoverBox.Append(open)
+			popoverBox.Append(delete)
+			popoverBox.Append(addTag)
+			popoverBox.Append(gtk.NewSeparator(gtk.OrientationHorizontal))
+		}
+
+		selectAll := gtk.NewButtonWithLabel("Select All")
+		selectAll.Connect("clicked", func() {
+			fl.SelectAll()
 			pop.Popdown()
 		})
+		popoverBox.Append(selectAll)
 
-		popoverBox.Append(open)
-		popoverBox.Append(delete)
-		popoverBox.Append(addTag)
 		pop.SetHasArrow(true)
 		rect := gdk.NewRectangle(int(x), int(y), 1, 1)
 		pop.SetPointingTo(&rect)

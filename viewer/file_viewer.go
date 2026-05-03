@@ -354,6 +354,14 @@ func (viewer *FileViewer) AddCopyCutItem(index int) {
 	}
 }
 
+func (viewer *FileViewer) AddSelectedToCopyCut() {
+	for idx, selected := range viewer.FileViewerList.SelectedIdxs {
+		if selected {
+			viewer.AddCopyCutItem(idx)
+		}
+	}
+}
+
 func (viewer *FileViewer) ExecuteCopyPaste(progress func(float64)) error {
 	if !viewer.IsCopy {
 		return errors.New("not in copy mode")
