@@ -16,6 +16,7 @@ import (
 	"github.com/MrSametBurgazoglu/atilgan/shortcut_popup"
 	"github.com/MrSametBurgazoglu/atilgan/sidebar"
 	"github.com/MrSametBurgazoglu/atilgan/special_path"
+	"github.com/MrSametBurgazoglu/atilgan/types"
 	"github.com/MrSametBurgazoglu/atilgan/viewer"
 	"github.com/MrSametBurgazoglu/atilgan/viewer_panel"
 	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
@@ -139,6 +140,10 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 
 	copyCutPreviewer := previewer.NewCopyCutPreviewer()
 	copyCutPreviewer.SetVisible(false)
+	copyCutPreviewer.OnClear = func() {
+		mainBox.ViewerPanel.FileViewer.CleanCopyCutFiles()
+		copyCutPreviewer.SetVisible(false)
+	}
 	rightBox.Append(copyCutPreviewer)
 
 	togglePreviewer := func() {
@@ -342,7 +347,7 @@ func main() {
 func activate(app *adw.Application) {
 	window := adw.NewApplicationWindow(&app.Application)
 	window.SetTitle("Atilgan")
-	window.SetDefaultSize(1200, 700)
+	window.SetDefaultSize(1200, 800)
 
 	display := gdk.DisplayGetDefault()
 
@@ -504,22 +509,22 @@ func (m *MainBox) setupActionsMenu(mainWindow *adw.ApplicationWindow, headerBar 
 	sortTypeBtn := gtk.NewButtonWithLabel("Type")
 
 	sortNameBtn.ConnectClicked(func() {
-		m.ViewerPanel.FileViewer.SortOrder = viewer.SortByName
+		m.ViewerPanel.FileViewer.SortOrder = types.SortByName
 		m.ViewerPanel.FileViewer.Refresh(false)
 		actionsPopover.Popdown()
 	})
 	sortTimeBtn.ConnectClicked(func() {
-		m.ViewerPanel.FileViewer.SortOrder = viewer.SortByTime
+		m.ViewerPanel.FileViewer.SortOrder = types.SortByTime
 		m.ViewerPanel.FileViewer.Refresh(false)
 		actionsPopover.Popdown()
 	})
 	sortSizeBtn.ConnectClicked(func() {
-		m.ViewerPanel.FileViewer.SortOrder = viewer.SortBySize
+		m.ViewerPanel.FileViewer.SortOrder = types.SortBySize
 		m.ViewerPanel.FileViewer.Refresh(false)
 		actionsPopover.Popdown()
 	})
 	sortTypeBtn.ConnectClicked(func() {
-		m.ViewerPanel.FileViewer.SortOrder = viewer.SortByType
+		m.ViewerPanel.FileViewer.SortOrder = types.SortByType
 		m.ViewerPanel.FileViewer.Refresh(false)
 		actionsPopover.Popdown()
 	})

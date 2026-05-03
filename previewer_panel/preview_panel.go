@@ -12,7 +12,8 @@ import (
 
 type PreviewPanel struct {
 	*gtk.Stack
-	dirPreviewer       *previewer.ImageDirPreviewer
+	imageDirPreviewer  *previewer.ImageDirPreviewer
+	dirPreviewer       *previewer.DirPreviewer
 	filePreviewer      *previewer.FilePreviewer
 	imagePreviewer     *previewer.ImagePreviewer
 	textPreviewer      *previewer.TextPreviewer
@@ -27,7 +28,8 @@ type PreviewPanel struct {
 func NewPreviewPanel(path string, changePath func(string), specialPathManager *special_path.SpecialPathManager) *PreviewPanel {
 	pp := &PreviewPanel{
 		Stack:              gtk.NewStack(),
-		dirPreviewer:       previewer.NewImageDirPreviewer(path, changePath, specialPathManager),
+		imageDirPreviewer:  previewer.NewImageDirPreviewer(path, changePath, specialPathManager),
+		dirPreviewer:       previewer.NewDirPreviewer(path, changePath, specialPathManager),
 		filePreviewer:      previewer.NewFilePreviewer(),
 		imagePreviewer:     previewer.NewImagePreviewer(),
 		textPreviewer:      previewer.NewTextPreviewer(),
@@ -38,7 +40,6 @@ func NewPreviewPanel(path string, changePath func(string), specialPathManager *s
 		specialPathManager: specialPathManager,
 	}
 	pp.AddCSSClass("preview-panel")
-	// pp.SetHExpand(true)
 
 	emptyPreviewer := gtk.NewLabel("Empty Directory")
 	emptyPreviewer.AddCSSClass("preview-title")
@@ -46,6 +47,7 @@ func NewPreviewPanel(path string, changePath func(string), specialPathManager *s
 	emptyPreviewer.SetVAlign(gtk.AlignCenter)
 
 	pp.AddTitled(emptyPreviewer, "emptypreviewer", "Empty Previewer")
+	pp.AddTitled(pp.imageDirPreviewer, "imagedirviewer", "Image Directory Viewer")
 	pp.AddTitled(pp.dirPreviewer, "dirviewer", "Directory Viewer")
 	pp.AddTitled(pp.filePreviewer, "filepreviewer", "File Previewer")
 	pp.AddTitled(pp.imagePreviewer, "imagepreviewer", "Image Previewer")
@@ -83,8 +85,30 @@ func (pp *PreviewPanel) Update(filePath string) {
 	info, err := os.Stat(filePath)
 	if err == nil {
 		if info.IsDir() {
-			pp.dirPreviewer.SetPath(filePath)
-			pp.SetVisibleChildName("dirviewer")
+			// Smart switching logic
+			entries, err := os.ReadDir(filePath)
+			if err == nil {
+				imageCount := 0
+				totalCount := 0
+				for _, entry := range entries {
+					if !entry.IsDir() {
+						totalCount++
+						if fileops.IsImage(entry.Name()) {
+							imageCount++
+						}
+					}
+				}
+				if totalCount > 0 && imageCount > totalCount/2 {
+					pp.imageDirPreviewer.SetPath(filePath)
+					pp.SetVisibleChildName("imagedirviewer")
+				} else {
+					pp.dirPreviewer.SetPath(filePath)
+					pp.SetVisibleChildName("dirviewer")
+				}
+			} else {
+				pp.dirPreviewer.SetPath(filePath)
+				pp.SetVisibleChildName("dirviewer")
+			}
 		} else {
 			pp.filePreviewer.SetFile(filePath, info)
 			pp.SetVisibleChildName("filepreviewer")

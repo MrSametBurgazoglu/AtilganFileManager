@@ -17,17 +17,9 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
 
-type SortOrder int
-
-const (
-	SortByName SortOrder = iota
-	SortByTime
-)
-
 type ImageDirPreviewer struct {
 	*gtk.Box
 	Path               string
-	SortOrder          SortOrder
 	changePath         func(string)
 	FileViewerList     *file_list.FileList
 	gridView           *gtk.GridView
@@ -43,7 +35,6 @@ func NewImageDirPreviewer(path string, changePath func(string), specialPathManag
 	viewer := &ImageDirPreviewer{
 		Box:                gtk.NewBox(gtk.OrientationVertical, 2),
 		Path:               path,
-		SortOrder:          SortByName,
 		changePath:         changePath,
 		FileViewerList:     file_list.NewFileList(false, specialPathManager, nil),
 		stack:              gtk.NewStack(),
@@ -180,12 +171,7 @@ func (viewer *ImageDirPreviewer) Refresh() {
 	var items []*types.ListItem
 	specialPath := viewer.specialPathManager.GetPath(viewer.Path)
 	if specialPath != nil {
-		allPaths := specialPath.GetItems()
-		for _, item := range allPaths {
-			if fileops.IsImage(item.Name) {
-				items = append(items, item)
-			}
-		}
+		items = specialPath.GetItems()
 	} else {
 		entries, err := os.ReadDir(viewer.Path)
 		if err != nil {
@@ -201,37 +187,19 @@ func (viewer *ImageDirPreviewer) Refresh() {
 		}
 
 		sort.Slice(filteredEntries, func(i, j int) bool {
-			switch viewer.SortOrder {
-			case SortByTime:
-				infoI, errI := filteredEntries[i].Info()
-				infoJ, errJ := filteredEntries[j].Info()
-				if errI != nil || errJ != nil {
-					return false
-				}
-				return infoI.ModTime().After(infoJ.ModTime())
-			default:
-				return strings.Title(filteredEntries[i].Name()) < strings.Title(filteredEntries[j].Name())
-			}
+			return strings.ToLower(filteredEntries[i].Name()) < strings.ToLower(filteredEntries[j].Name())
 		})
 
 		for _, entry := range filteredEntries {
 			fullPath := filepath.Join(viewer.Path, entry.Name())
-			var group string
-			if viewer.SortOrder == SortByTime {
-				info, err := entry.Info()
-				if err != nil {
-					group = "Unknown"
-				} else {
-					group = fileops.GetGroupForTime(info.ModTime())
-				}
-			} else {
-				name := entry.Name()
-				runes := []rune(strings.Title(name))
-				firstRune := runes[0]
-				group = string(firstRune)
+			name := entry.Name()
+			group := ""
+			if len(name) > 0 {
+				runes := []rune(strings.ToUpper(name))
+				group = string(runes[0])
 			}
 			listItem := &types.ListItem{
-				Name:  entry.Name(),
+				Name:  name,
 				Path:  fullPath,
 				Group: group,
 				IsDir: entry.IsDir(),

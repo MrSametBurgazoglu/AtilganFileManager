@@ -2,7 +2,6 @@ package file_list
 
 import (
 	"fmt"
-	"math"
 	"os/exec"
 	"slices"
 	"strings"
@@ -281,31 +280,54 @@ func (fl *FileGrid) layoutCategories(w int) ([]Category, int) {
 		}
 	}
 
-	// 3. Position categories (Side-by-Side with wrapping)
-	currentX, currentY := 0, 0
-	rowMaxHeight := 0
+	// 3. Position categories (Side-by-Side with row justification)
+	currentY := 0
+	var rows [][]int // Indices of categories in each row
+	var currentRow []int
+	currentX := 0
 
 	for i := range categories {
 		cat := &categories[i]
-		
-		// Check if it fits in current row
 		if currentX > 0 && currentX+cat.Width > w {
-			// Move to next row
-			currentX = 0
-			currentY += rowMaxHeight + categoryGap
-			rowMaxHeight = 0
-		}
-
-		cat.X = currentX
-		cat.Y = currentY
-		
-		currentX += cat.Width + categoryGap
-		if cat.Height > rowMaxHeight {
-			rowMaxHeight = cat.Height
+			rows = append(rows, currentRow)
+			currentRow = []int{i}
+			currentX = cat.Width + categoryGap
+		} else {
+			currentRow = append(currentRow, i)
+			currentX += cat.Width + categoryGap
 		}
 	}
+	if len(currentRow) > 0 {
+		rows = append(rows, currentRow)
+	}
 
-	totalHeight := currentY + rowMaxHeight + categoryGap
+	for _, rowIdxs := range rows {
+		totalCatsWidth := 0
+		maxHeight := 0
+		for _, idx := range rowIdxs {
+			totalCatsWidth += categories[idx].Width
+			if categories[idx].Height > maxHeight {
+				maxHeight = categories[idx].Height
+			}
+		}
+
+		// Calculate gap for this row including both sides
+		rowGap := (w - totalCatsWidth) / (len(rowIdxs) + 1)
+		if rowGap < 0 {
+			rowGap = 0
+		}
+
+		currentX := rowGap
+		for _, idx := range rowIdxs {
+			cat := &categories[idx]
+			cat.X = currentX
+			cat.Y = currentY
+			currentX += cat.Width + rowGap
+		}
+		currentY += maxHeight + categoryGap
+	}
+
+	totalHeight := currentY
 	fl.DrawingArea.SetContentHeight(totalHeight)
 	
 	return categories, totalHeight
@@ -439,15 +461,24 @@ func (fl *FileGrid) drawHeader(cr *cairo.Context, text string, x, y, h int) {
 	cr.SetFontSize(fl.themeConfig.Fonts.HeaderSize - 1)
 	
 	displayName := strings.ToUpper(text)
-	extents := cr.TextExtents(displayName)
+	runes := []rune(displayName)
+	fontSize := fl.themeConfig.Fonts.HeaderSize - 1
+	lineHeight := fontSize + 2
+	totalTextHeight := float64(len(runes)) * lineHeight
 	
-	cr.Save()
-	// Center horizontally and vertically by rotating
-	cr.Translate(float64(x)+(float64(categoryHeaderWidth)+extents.Height)/2, float64(y)+(float64(h)+extents.Width)/2)
-	cr.Rotate(-math.Pi / 2)
-	cr.MoveTo(0, 0)
-	cr.ShowText(displayName)
-	cr.Restore()
+	startY := float64(y) + (float64(h)-totalTextHeight)/2 + fontSize
+	
+	for i, r := range runes {
+		char := string(r)
+		extents := cr.TextExtents(char)
+		
+		// Center character horizontally in the header width
+		charX := float64(x) + (float64(categoryHeaderWidth)-extents.Width)/2 - extents.XBearing
+		charY := startY + float64(i)*lineHeight
+		
+		cr.MoveTo(charX, charY)
+		cr.ShowText(char)
+	}
 	
 	// Subtle separator line
 	cr.SetSourceRGBA(float64(fl.colorTheme.AccentColor.Red()), float64(fl.colorTheme.AccentColor.Green()), float64(fl.colorTheme.AccentColor.Blue()), 0.1)

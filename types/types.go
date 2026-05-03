@@ -21,3 +21,12 @@ const (
 	TypeDoc
 	TypeMedia
 )
+
+type SortOrder int
+
+const (
+	SortByName SortOrder = iota
+	SortByTime
+	SortBySize
+	SortByType
+)

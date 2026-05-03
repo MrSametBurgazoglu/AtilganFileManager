@@ -74,19 +74,22 @@ func CopyFiles(sourcePaths []string, destinationDir string, progress func(float6
 	return errors
 }
 
-func CutFiles(sourcePaths []string, destinationDir string) []error {
+func CutFiles(sourcePaths []string, destinationDir string, progress func(float64)) []error {
 	var errors []error
 
 	if err := os.MkdirAll(destinationDir, 0755); err != nil {
 		return append(errors, fmt.Errorf("failed to create destination directory %s: %w", destinationDir, err))
 	}
 
-	for _, sourcePath := range sourcePaths {
+	for i, sourcePath := range sourcePaths {
 		fileName := filepath.Base(sourcePath)
 		destinationPath := filepath.Join(destinationDir, fileName)
 
 		if err := os.Rename(sourcePath, destinationPath); err != nil {
 			errors = append(errors, fmt.Errorf("error cutting %s: %w", sourcePath, err))
+		}
+		if progress != nil {
+			progress(float64(i+1) / float64(len(sourcePaths)))
 		}
 	}
 

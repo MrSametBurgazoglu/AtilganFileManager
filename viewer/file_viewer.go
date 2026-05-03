@@ -17,15 +17,6 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
 
-type SortOrder int
-
-const (
-	SortByName SortOrder = iota
-	SortByTime
-	SortBySize
-	SortByType
-)
-
 type FileViewHistory struct {
 	Path  string
 	Index int
@@ -34,7 +25,7 @@ type FileViewHistory struct {
 type FileViewer struct {
 	*gtk.Box
 	Path               string
-	SortOrder          SortOrder
+	SortOrder          types.SortOrder
 	SearchValue        string
 	SearchRevealer     *gtk.Revealer
 	SearchEntry        *gtk.SearchEntry
@@ -55,7 +46,7 @@ func NewFileViewer(mainWindow *gtk.Window, path string, pathChanged func(string)
 	viewer := &FileViewer{
 		Box:                gtk.NewBox(gtk.OrientationVertical, 6),
 		Path:               path,
-		SortOrder:          SortByName,
+		SortOrder:          types.SortByName,
 		SearchValue:        "",
 		FiltersMap:         make(map[string]bool),
 		FileViewerHistory:  make(map[string]*FileViewHistory),
@@ -204,66 +195,70 @@ func (viewer *FileViewer) Refresh(newFilter bool) {
 
 	sort.Slice(filteredEntries, func(i, j int) bool {
 		switch viewer.SortOrder {
-		case SortByTime:
+		case types.SortByTime:
 			infoI, errI := filteredEntries[i].Info()
 			infoJ, errJ := filteredEntries[j].Info()
 			if errI != nil || errJ != nil {
 				return false
 			}
 			return infoI.ModTime().After(infoJ.ModTime())
-		case SortBySize:
-			if filteredEntries[i].IsDir() && !filteredEntries[j].IsDir() {
+		case types.SortBySize:
+			isDirI := filteredEntries[i].IsDir()
+			isDirJ := filteredEntries[j].IsDir()
+			if isDirI && !isDirJ {
 				return true
 			}
-			if !filteredEntries[i].IsDir() && filteredEntries[j].IsDir() {
+			if !isDirI && isDirJ {
 				return false
 			}
-			infoI, _ := filteredEntries[i].Info()
-			infoJ, _ := filteredEntries[j].Info()
-			if infoI.Size() != infoJ.Size() {
-				return infoI.Size() > infoJ.Size()
+			infoI, errI := filteredEntries[i].Info()
+			infoJ, errJ := filteredEntries[j].Info()
+			if errI == nil && errJ == nil {
+				if infoI.Size() != infoJ.Size() {
+					return infoI.Size() > infoJ.Size()
+				}
 			}
-			return strings.Title(filteredEntries[i].Name()) < strings.Title(filteredEntries[j].Name())
-		case SortByType:
+			return strings.ToLower(filteredEntries[i].Name()) < strings.ToLower(filteredEntries[j].Name())
+		case types.SortByType:
 			typeI := fileops.GetFileType(filteredEntries[i])
 			typeJ := fileops.GetFileType(filteredEntries[j])
 			if typeI != typeJ {
 				return typeI < typeJ
 			}
-			return strings.Title(filteredEntries[i].Name()) < strings.Title(filteredEntries[j].Name())
+			return strings.ToLower(filteredEntries[i].Name()) < strings.ToLower(filteredEntries[j].Name())
 		default:
-			return strings.Title(filteredEntries[i].Name()) < strings.Title(filteredEntries[j].Name())
+			return strings.ToLower(filteredEntries[i].Name()) < strings.ToLower(filteredEntries[j].Name())
 		}
 	})
 
 	newFiles := make([]*types.ListItem, 0)
 	var sizeThresholds []int64
-	if viewer.SortOrder == SortBySize {
+	if viewer.SortOrder == types.SortBySize {
 		sizeThresholds = fileops.CalculateSizeThresholds(filteredEntries)
 	}
 
 	for _, entry := range filteredEntries {
 		fullPath := path.Join(viewer.Path, entry.Name())
 		var group string
-		if viewer.SortOrder == SortByTime {
+		if viewer.SortOrder == types.SortByTime {
 			info, err := entry.Info()
 			if err != nil {
 				group = "Unknown"
 			} else {
 				group = fileops.GetGroupForTime(info.ModTime())
 			}
-		} else if viewer.SortOrder == SortBySize {
+		} else if viewer.SortOrder == types.SortBySize {
 			if entry.IsDir() {
 				group = "Directories"
 			} else {
 				info, _ := entry.Info()
 				group = fileops.GetGroupForSize(info.Size(), sizeThresholds)
 			}
-		} else if viewer.SortOrder == SortByType {
+		} else if viewer.SortOrder == types.SortByType {
 			group = fileops.GetGroupForType(entry)
 		} else {
 			name := entry.Name()
-			runes := []rune(strings.Title(name))
+			runes := []rune(strings.ToLower(name))
 			firstRune := runes[0]
 			group = string(firstRune)
 		}
@@ -376,7 +371,7 @@ func (viewer *FileViewer) ExecuteCopyPaste(progress func(float64)) error {
 	}
 
 	if viewer.IsCut {
-		errors := fileops.CutFiles(filePaths, viewer.Path)
+		errors := fileops.CutFiles(filePaths, viewer.Path, progress)
 		if errors != nil && len(errors) > 0 {
 			return errors[0]
 		}
