@@ -118,6 +118,71 @@ popover > box,
     border-color: @accent_bg_color;
 }
 
+/* Network Viewer Styling */
+.network-viewer {
+    background-color: #1e1e2e;
+}
+
+.network-card {
+    background-color: #11111b;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #313244;
+    transition: all 200ms ease-in-out;
+}
+
+.network-card:hover {
+    background-color: rgba(137, 180, 250, 0.1);
+    border-color: #89b4fa;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.network-card-title {
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #cdd6f4;
+}
+
+.network-card-subtitle {
+    font-size: 0.9em;
+    color: #a6adc8;
+}
+
+.network-form-card {
+    background-color: #181825;
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid #313244;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.network-connect-button {
+    padding: 10px 24px;
+    font-weight: bold;
+    border-radius: 8px;
+    margin-top: 12px;
+}
+
+.network-section-title {
+    font-weight: 800;
+    font-size: 1.4em;
+    margin-bottom: 16px;
+    color: #89b4fa;
+}
+
+.network-remove-button {
+    border-radius: 20px;
+    padding: 4px;
+    min-width: 32px;
+    min-height: 32px;
+    color: #f38ba8;
+}
+
+.network-remove-button:hover {
+    background-color: #f38ba8;
+    color: #11111b;
+}
+
 /* Sidebar styling */
 .sidebar {
     background-color: #11111b;
@@ -321,4 +386,69 @@ entry {
 
 entry:focus {
     border-color: @accent_bg_color;
+}
+
+/* Network Viewer Styling */
+.network-viewer {
+    background-color: #1e1e2e;
+}
+
+.network-card {
+    background-color: #11111b;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #313244;
+    transition: all 200ms ease-in-out;
+}
+
+.network-card:hover {
+    background-color: rgba(137, 180, 250, 0.1);
+    border-color: #89b4fa;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.network-card-title {
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #cdd6f4;
+}
+
+.network-card-subtitle {
+    font-size: 0.9em;
+    color: #a6adc8;
+}
+
+.network-form-card {
+    background-color: #181825;
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid #313244;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.network-connect-button {
+    padding: 10px 24px;
+    font-weight: bold;
+    border-radius: 8px;
+    margin-top: 12px;
+}
+
+.network-section-title {
+    font-weight: 800;
+    font-size: 1.4em;
+    margin-bottom: 16px;
+    color: #89b4fa;
+}
+
+.network-remove-button {
+    border-radius: 20px;
+    padding: 4px;
+    min-width: 32px;
+    min-height: 32px;
+    color: #f38ba8;
+}
+
+.network-remove-button:hover {
+    background-color: #f38ba8;
+    color: #11111b;
 }

@@ -56,7 +56,8 @@ func NewSidebar(pathChanged func(string)) *Sidebar {
 	sidebar.addLocationButton("folder-documents-symbolic", "Documents", documents)
 	sidebar.addLocationButton("folder-pictures-symbolic", "Pictures", pictures)
 	sidebar.addLocationButton("folder-music-symbolic", "Music", music)
-	sidebar.addLocationButton("folder-videos-symbolic", "Videos", videos)
+	sidebar.addLocationButton("user-videos-symbolic", "Videos", videos)
+	sidebar.addLocationButton("network-server-symbolic", "Network", "network://")
 	sidebar.addLocationButton("tag-symbolic", "Tags", "tags://")
 
 	return sidebar

@@ -31,6 +31,7 @@ var styleCSS embed.FS
 
 type MainBox struct {
 	*adw.NavigationSplitView
+	MainWindow     *adw.ApplicationWindow
 	Path           string
 	Pathbar        *pathbar.PathBar
 	PreviewerPanel *previewer_panel.PreviewPanel
@@ -47,6 +48,7 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 	splitView.SetSidebarWidthFraction(0.15)
 	mainBox := &MainBox{
 		NavigationSplitView: splitView,
+		MainWindow:          mainWindow,
 		HeaderBar:           headerBar,
 	}
 
@@ -392,18 +394,15 @@ func (m *MainBox) pathChanged(path string) {
 		m.HeaderBar.SetTitleWidget(gtk.NewBox(gtk.OrientationHorizontal, 0))
 	}
 
+	m.Path = path
+	m.ViewerPanel.SetPath(path)
+	
 	specialPath := m.SpecialPaths.GetPath(path)
-	if specialPath != nil {
-		items := specialPath.GetItems()
-		m.ViewerPanel.FileViewer.FileViewerList.SetItems(items)
-		m.Path = specialPath.GetPath()
-		m.ViewerPanel.FileViewer.SetFolderName(path)
-	} else {
-		m.Path = path
-		m.ViewerPanel.FileViewer.SetPath(path)
+	if specialPath == nil {
 		m.Search.SetPath(path)
 		m.SpecialPaths.AddRecentPath(path)
 	}
+
 	m.updatePreviewer()
 	m.Pathbar.UpdatePathBar(path)
 	m.SideBar.SetPath(path)
