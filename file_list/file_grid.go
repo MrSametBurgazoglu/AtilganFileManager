@@ -210,10 +210,10 @@ func (fl *FileGrid) onDraw(da *gtk.DrawingArea, cr *cairo.Context, w, h int) {
 		fl.colorTheme.HoverBgColor = gdk.NewRGBA(accent.Red(), accent.Green(), accent.Blue(), 0.05)
 	}
 
-	categories, _ := fl.layoutCategories(w)
+	categories, totalHeight := fl.layoutCategories(w)
 
 	cr.SetSourceRGBA(float64(fl.colorTheme.BackgroundColor.Red()), float64(fl.colorTheme.BackgroundColor.Green()), float64(fl.colorTheme.BackgroundColor.Blue()), float64(fl.colorTheme.BackgroundColor.Alpha()))
-	cr.Rectangle(0, 0, float64(w), float64(h))
+	cr.Rectangle(0, 0, float64(w), float64(totalHeight))
 	cr.Fill()
 
 	for _, cat := range categories {

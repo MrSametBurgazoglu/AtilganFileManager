@@ -40,8 +40,10 @@ func NewDirPreviewer(path string, changePath func(string), specialPathManager *s
 
 	viewer.FileViewerList.SetHExpand(true)
 	viewer.FileViewerList.SetVExpand(true)
+	viewer.FileViewerList.SetVAlign(gtk.AlignFill)
 	viewer.Box.SetVExpand(true)
 	viewer.Box.SetHExpand(true)
+	viewer.Box.SetVAlign(gtk.AlignFill)
 
 	headerBox := gtk.NewBox(gtk.OrientationHorizontal, 6)
 	headerBox.AddCSSClass("dir-previewer-header")

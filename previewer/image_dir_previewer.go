@@ -48,8 +48,10 @@ func NewImageDirPreviewer(path string, changePath func(string), specialPathManag
 
 	viewer.FileViewerList.SetHExpand(true)
 	viewer.FileViewerList.SetVExpand(true)
+	viewer.FileViewerList.SetVAlign(gtk.AlignFill)
 	viewer.Box.SetVExpand(true)
 	viewer.Box.SetHExpand(true)
+	viewer.Box.SetVAlign(gtk.AlignFill)
 
 	headerBox := gtk.NewBox(gtk.OrientationHorizontal, 6)
 	headerBox.AddCSSClass("dir-previewer-header")
@@ -130,6 +132,7 @@ func NewImageDirPreviewer(path string, changePath func(string), specialPathManag
 
 	viewer.stack.SetVExpand(true)
 	viewer.stack.SetHExpand(true)
+	viewer.stack.SetVAlign(gtk.AlignFill)
 	viewer.stack.AddTitled(viewer.FileViewerList, "list", "List")
 	viewer.stack.AddTitled(gridScrolled, "grid", "Grid")
 
