@@ -104,11 +104,8 @@ func NewDirPreviewer(path string, changePath func(string), specialPathManager *s
 	popoverBox := gtk.NewBox(gtk.OrientationVertical, 6)
 	viewer.popover.SetChild(popoverBox)
 
-	viewer.FileViewerList.SelectionChanged = func(index int) {
-		selectedItem := viewer.FileViewerList.Items[index]
-		if selectedItem.IsDir {
-			changePath(selectedItem.Path)
-		}
+	viewer.FileViewerList.PathChanged = func(path string) {
+		changePath(path)
 	}
 
 	viewer.store = gio.NewListStore(glib.TypeObject)
@@ -156,6 +153,16 @@ func NewDirPreviewer(path string, changePath func(string), specialPathManager *s
 	viewer.gridView.SetVisible(false)
 	viewer.gridView.SetMaxColumns(4)
 	viewer.gridView.SetMinColumns(2)
+
+	viewer.gridView.ConnectActivate(func(position uint) {
+		if int(position) < len(viewer.FileViewerList.Items) {
+			item := viewer.FileViewerList.Items[position]
+			if item.IsDir {
+				changePath(item.Path)
+			}
+		}
+	})
+
 	scrolled := gtk.NewScrolledWindow()
 	scrolled.SetChild(viewer.gridView)
 	scrolled.SetHExpand(true)

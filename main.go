@@ -67,9 +67,6 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 			headerBar.SetTitleWidget(gtk.NewBox(gtk.OrientationHorizontal, 0))
 		}
 	})
-	headerBar.ShortcutsButton.ConnectClicked(func() {
-		shortcut_popup.NewShortcutPopup(&mainWindow.Window)
-	})
 
 	mainBox.SpecialPaths, err = special_path.NewSpecialPathManager()
 	if err != nil {
@@ -474,6 +471,22 @@ func (m *MainBox) setupActionsMenu(mainWindow *adw.ApplicationWindow, headerBar 
 		m.ViewerPanel.FileViewer.OpenTerminal()
 	}))
 	actionsBox.Append(createActionBtn("view-reveal-symbolic", "Toggle Previewer", togglePreviewer))
+
+	actionsBox.Append(gtk.NewSeparator(gtk.OrientationHorizontal))
+
+	actionsBox.Append(createActionBtn("preferences-desktop-keyboard-shortcuts-symbolic", "Shortcuts", func() {
+		shortcut_popup.NewShortcutPopup(&mainWindow.Window)
+	}))
+	actionsBox.Append(createActionBtn("help-about-symbolic", "About", func() {
+		aboutDialog := adw.NewAboutWindow()
+		aboutDialog.SetApplicationName("Atilgan")
+		aboutDialog.SetVersion("0.1.0")
+		aboutDialog.SetApplicationIcon("atilgan_icon")
+		aboutDialog.SetCopyright("Copyright © 2025 MrSametBurgazoglu")
+		aboutDialog.SetWebsite("https://github.com/MrSametBurgazoglu/AtilganFileManager")
+		aboutDialog.SetTransientFor(&mainWindow.Window)
+		aboutDialog.SetVisible(true)
+	}))
 
 	actionsBox.Append(gtk.NewSeparator(gtk.OrientationHorizontal))
 

@@ -6,12 +6,11 @@ import (
 )
 
 type HeaderBar struct {
-	LeftHeader           *adw.HeaderBar
-	RightHeader          *adw.HeaderBar
-	ActionsButton        *gtk.MenuButton
-	ShortcutsButton      *gtk.Button
-	SearchButton         *gtk.Button
-	CircularProgressBar  *CircularProgressBar
+	LeftHeader          *adw.HeaderBar
+	RightHeader         *adw.HeaderBar
+	ActionsButton       *gtk.MenuButton
+	SearchButton        *gtk.Button
+	CircularProgressBar *CircularProgressBar
 }
 
 func NewHeaderBar(mainWindow *adw.ApplicationWindow) *HeaderBar {
@@ -44,28 +43,12 @@ func NewHeaderBar(mainWindow *adw.ApplicationWindow) *HeaderBar {
 	circularProgressBar.SetVisible(false)
 	rightHeader.PackStart(circularProgressBar)
 
-	aboutButton := gtk.NewButtonFromIconName("help-about-symbolic")
-	aboutButton.ConnectClicked(func() {
-		aboutDialog := adw.NewAboutWindow()
-		aboutDialog.SetApplicationName("Atilgan")
-		aboutDialog.SetVersion("0.1.0")
-		aboutDialog.SetApplicationIcon("atilgan_icon")
-		aboutDialog.SetCopyright("Copyright © 2025 MrSametBurgazoglu")
-		aboutDialog.SetWebsite("https://github.com/MrSametBurgazoglu/AtilganFileManager")
-		aboutDialog.SetVisible(true)
-	})
-	rightHeader.PackEnd(aboutButton)
-
-	shortcutsButton := gtk.NewButtonFromIconName("preferences-desktop-keyboard-shortcuts-symbolic")
-	rightHeader.PackEnd(shortcutsButton)
-
 	return &HeaderBar{
-		LeftHeader:           leftHeader,
-		RightHeader:          rightHeader,
-		ActionsButton:        actionsButton,
-		ShortcutsButton:      shortcutsButton,
-		SearchButton:         searchButton,
-		CircularProgressBar:  circularProgressBar,
+		LeftHeader:          leftHeader,
+		RightHeader:         rightHeader,
+		ActionsButton:       actionsButton,
+		SearchButton:        searchButton,
+		CircularProgressBar: circularProgressBar,
 	}
 }
 

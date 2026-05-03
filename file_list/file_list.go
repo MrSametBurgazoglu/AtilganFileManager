@@ -120,8 +120,6 @@ func NewFileList(canSelect bool, specialPathManager *special_path.SpecialPathMan
 
 		fl.DrawingArea.SetFocusable(true)
 		fl.DrawingArea.AddController(fl.newMouseController(fl.DrawingArea))
-		fl.DrawingArea.AddController(fl.newGestureClick(fl.DrawingArea))
-
 		fl.DrawingArea.AddController(fl.newContextMenuController(fl.DrawingArea))
 
 		dragSource := gtk.NewDragSource()
@@ -156,6 +154,8 @@ func NewFileList(canSelect bool, specialPathManager *special_path.SpecialPathMan
 		})
 		fl.DrawingArea.AddController(dragSource)
 	}
+
+	fl.DrawingArea.AddController(fl.newGestureClick(fl.DrawingArea))
 
 	return fl
 }

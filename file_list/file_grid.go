@@ -152,10 +152,10 @@ func NewFileGrid(canSelect bool, specialPathManager *special_path.SpecialPathMan
 
 		fl.DrawingArea.SetFocusable(true)
 		fl.DrawingArea.AddController(fl.newMouseController(fl.DrawingArea))
-		fl.DrawingArea.AddController(fl.newGestureClick(fl.DrawingArea))
-
 		fl.DrawingArea.AddController(fl.newContextMenuController(fl.DrawingArea))
 	}
+
+	fl.DrawingArea.AddController(fl.newGestureClick(fl.DrawingArea))
 
 	return fl
 }
