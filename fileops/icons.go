@@ -123,3 +123,62 @@ func GetFileDescription(fileName string) string {
 	}
 	return strings.ToUpper(strings.TrimPrefix(ext, ".")) + " File"
 }
+
+func IsImage(fileName string) bool {
+	fileName = strings.ToLower(fileName)
+	return strings.HasSuffix(fileName, ".png") ||
+		strings.HasSuffix(fileName, ".jpg") ||
+		strings.HasSuffix(fileName, ".jpeg") ||
+		strings.HasSuffix(fileName, ".gif") ||
+		strings.HasSuffix(fileName, ".webp") ||
+		strings.HasSuffix(fileName, ".svg")
+}
+
+func IsText(fileName string) bool {
+	fileName = strings.ToLower(fileName)
+	return strings.HasSuffix(fileName, ".txt") ||
+		strings.HasSuffix(fileName, ".mod") ||
+		strings.HasSuffix(fileName, ".sum")
+}
+
+func IsMedia(fileName string) bool {
+	fileName = strings.ToLower(fileName)
+	return strings.HasSuffix(fileName, ".mp3") || strings.HasSuffix(fileName, ".mp4")
+}
+
+func IsDocument(fileName string) bool {
+	fileName = strings.ToLower(fileName)
+	return strings.HasSuffix(fileName, ".pdf") ||
+		strings.HasSuffix(fileName, ".epub") ||
+		strings.HasSuffix(fileName, ".mobi") ||
+		strings.HasSuffix(fileName, ".docx") ||
+		strings.HasSuffix(fileName, ".xlsx") ||
+		strings.HasSuffix(fileName, ".pptx")
+}
+
+func IsCode(fileName string) bool {
+	fileName = strings.ToLower(fileName)
+	return strings.HasSuffix(fileName, ".go") ||
+		strings.HasSuffix(fileName, ".json") ||
+		strings.HasSuffix(fileName, ".yaml") ||
+		strings.HasSuffix(fileName, ".yml") ||
+		strings.HasSuffix(fileName, ".env") ||
+		strings.HasSuffix(fileName, "dockerfile") ||
+		strings.HasSuffix(fileName, ".js") ||
+		strings.HasSuffix(fileName, ".ts") ||
+		strings.HasSuffix(fileName, ".py") ||
+		strings.HasSuffix(fileName, ".java") ||
+		strings.HasSuffix(fileName, ".c") ||
+		strings.HasSuffix(fileName, ".cpp") ||
+		strings.HasSuffix(fileName, ".h") ||
+		strings.HasSuffix(fileName, ".hpp") ||
+		strings.HasSuffix(fileName, ".rs") ||
+		strings.HasSuffix(fileName, ".rb") ||
+		strings.HasSuffix(fileName, ".php") ||
+		strings.HasSuffix(fileName, ".swift") ||
+		strings.HasSuffix(fileName, ".kt") ||
+		strings.HasSuffix(fileName, ".kts") ||
+		strings.HasSuffix(fileName, ".sh") ||
+		strings.HasSuffix(fileName, ".bat") ||
+		strings.HasSuffix(fileName, ".md")
+}

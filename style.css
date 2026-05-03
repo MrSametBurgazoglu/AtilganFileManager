@@ -159,6 +159,30 @@ scrolledwindow {
     padding: 8px;
 }
 
+.dir-previewer-header {
+    background-color: #11111b;
+    border-radius: 8px;
+    padding: 6px 10px;
+    margin-bottom: 2px;
+    border: 1px solid #313244;
+}
+
+.dir-previewer-title {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #cdd6f4;
+}
+
+.preview-grid-item {
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.preview-grid-item label {
+    font-size: 0.9em;
+    color: #bac2de;
+}
+
 .viewer-panel {
     background-color: #1e1e2e;
     padding: 0px;

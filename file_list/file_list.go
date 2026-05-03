@@ -237,7 +237,7 @@ func (fl *FileList) onDraw(da *gtk.DrawingArea, cr *cairo.Context, w, h int) {
 	}
 
 	cr.SetSourceRGBA(float64(fl.colorTheme.BackgroundColor.Red()), float64(fl.colorTheme.BackgroundColor.Green()), float64(fl.colorTheme.BackgroundColor.Blue()), float64(fl.colorTheme.BackgroundColor.Alpha()))
-	cr.Rectangle(0, 0, float64(w), float64(contentHeight))
+	cr.Rectangle(0, 0, float64(w), float64(h))
 	cr.Fill()
 
 	y := 0

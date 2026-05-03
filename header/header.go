@@ -32,6 +32,11 @@ func NewHeaderBar(mainWindow *adw.ApplicationWindow) *HeaderBar {
 	// Set an empty widget to prevent the default window title from showing in the center
 	rightHeader.SetTitleWidget(gtk.NewBox(gtk.OrientationHorizontal, 0))
 
+	logo := gtk.NewImageFromFile("atilgan_icon.svg")
+	logo.SetPixelSize(24)
+	logo.SetMarginStart(6)
+	leftHeader.PackStart(logo)
+
 	actionsButton := gtk.NewMenuButton()
 	actionsButton.SetIconName("open-menu-symbolic")
 	leftHeader.PackEnd(actionsButton)

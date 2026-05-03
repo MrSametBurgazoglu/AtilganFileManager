@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"runtime"
 	"sort"
 	"strings"
@@ -144,22 +143,12 @@ func (viewer *FileViewer) Refresh(newFilter bool) {
 		viewer.Filters = []string{}
 		viewer.FiltersMap = make(map[string]bool)
 		viewer.DefaultFilters = make([]string, 0)
-		extensions := []string{}
 		hasDir := false
 		hasExec := false
 		hasHidden := false
 		for _, entry := range entries {
 			if !entry.IsDir() && !strings.HasPrefix(entry.Name(), ".") {
-				ext := strings.ToLower(filepath.Ext(entry.Name()))
-				if ext != "" {
-					isExist := viewer.FiltersMap[ext]
-					viewer.FiltersMap[ext] = true
-					if !isExist {
-						extensions = append(extensions, ext)
-					}
-				} else {
-					hasExec = true
-				}
+				hasExec = true
 			} else if strings.HasPrefix(entry.Name(), ".") {
 				hasHidden = true
 			} else {
@@ -178,8 +167,6 @@ func (viewer *FileViewer) Refresh(newFilter bool) {
 			viewer.FiltersMap["Hidden"] = false
 			viewer.DefaultFilters = append(viewer.DefaultFilters, "Hidden")
 		}
-		sort.Strings(extensions)
-		viewer.Filters = append(viewer.Filters, extensions...)
 		viewer.UpdateFilterPopover()
 	}
 
@@ -205,10 +192,7 @@ func (viewer *FileViewer) Refresh(newFilter bool) {
 				show = true
 			}
 		} else {
-			ext := strings.ToLower(filepath.Ext(entry.Name()))
-			if viewer.FiltersMap[ext] {
-				show = true
-			}
+			show = true
 		}
 
 		if !show {

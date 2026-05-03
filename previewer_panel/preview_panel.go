@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/MrSametBurgazoglu/atilgan/fileops"
 	"github.com/MrSametBurgazoglu/atilgan/previewer"
 	"github.com/MrSametBurgazoglu/atilgan/special_path"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
@@ -11,7 +12,7 @@ import (
 
 type PreviewPanel struct {
 	*gtk.Stack
-	dirPreviewer       *previewer.DirPreviewer
+	dirPreviewer       *previewer.ImageDirPreviewer
 	filePreviewer      *previewer.FilePreviewer
 	imagePreviewer     *previewer.ImagePreviewer
 	textPreviewer      *previewer.TextPreviewer
@@ -26,7 +27,7 @@ type PreviewPanel struct {
 func NewPreviewPanel(path string, changePath func(string), specialPathManager *special_path.SpecialPathManager) *PreviewPanel {
 	pp := &PreviewPanel{
 		Stack:              gtk.NewStack(),
-		dirPreviewer:       previewer.NewDirPreviewer(path, changePath, specialPathManager),
+		dirPreviewer:       previewer.NewImageDirPreviewer(path, changePath, specialPathManager),
 		filePreviewer:      previewer.NewFilePreviewer(),
 		imagePreviewer:     previewer.NewImagePreviewer(),
 		textPreviewer:      previewer.NewTextPreviewer(),
@@ -106,82 +107,23 @@ func (pp *PreviewPanel) ShowSpecificPreviewer() {
 
 	pp.specialPathManager.AddRecentPath(pp.filePath)
 
-	if isImage(info.Name()) {
+	if fileops.IsImage(info.Name()) {
 		pp.imagePreviewer.SetImage(pp.filePath, info)
 		pp.SetVisibleChildName("imagepreviewer")
-	} else if isText(info.Name()) {
+	} else if fileops.IsText(info.Name()) {
 		pp.textPreviewer.SetText(pp.filePath, info)
 		pp.SetVisibleChildName("textpreviewer")
-	} else if isCode(info.Name()) {
+	} else if fileops.IsCode(info.Name()) {
 		pp.codePreviewer.SetText(pp.filePath, info)
 		pp.SetVisibleChildName("codepreviewer")
-	} else if isMedia(info.Name()) {
+	} else if fileops.IsMedia(info.Name()) {
 		pp.mediaPreviewer.SetMedia(pp.filePath, info)
 		pp.SetVisibleChildName("mediapreviewer")
-	} else if isDocument(info.Name()) {
+	} else if fileops.IsDocument(info.Name()) {
 		pp.documentPreviewer.SetDocument(pp.filePath, info)
 		pp.SetVisibleChildName("documentpreviewer")
 	} else {
 		pp.filePreviewer.SetFile(pp.filePath, info)
 		pp.SetVisibleChildName("filepreviewer")
 	}
-}
-
-func isImage(fileName string) bool {
-	fileName = strings.ToLower(fileName)
-	return strings.HasSuffix(fileName, ".png") ||
-		strings.HasSuffix(fileName, ".jpg") ||
-		strings.HasSuffix(fileName, ".jpeg") ||
-		strings.HasSuffix(fileName, ".gif") ||
-		strings.HasSuffix(fileName, ".webp") ||
-		strings.HasSuffix(fileName, ".svg")
-}
-
-func isText(fileName string) bool {
-	fileName = strings.ToLower(fileName)
-	return strings.HasSuffix(fileName, ".txt") ||
-		strings.HasSuffix(fileName, ".mod") ||
-		strings.HasSuffix(fileName, ".sum")
-}
-
-func isMedia(fileName string) bool {
-	fileName = strings.ToLower(fileName)
-	return strings.HasSuffix(fileName, ".mp3") || strings.HasSuffix(fileName, ".mp4")
-}
-
-func isDocument(fileName string) bool {
-	fileName = strings.ToLower(fileName)
-	return strings.HasSuffix(fileName, ".pdf") ||
-		strings.HasSuffix(fileName, ".epub") ||
-		strings.HasSuffix(fileName, ".mobi") ||
-		strings.HasSuffix(fileName, ".docx") ||
-		strings.HasSuffix(fileName, ".xlsx") ||
-		strings.HasSuffix(fileName, ".pptx")
-}
-
-func isCode(fileName string) bool {
-	fileName = strings.ToLower(fileName)
-	return strings.HasSuffix(fileName, ".go") ||
-		strings.HasSuffix(fileName, ".json") ||
-		strings.HasSuffix(fileName, ".yaml") ||
-		strings.HasSuffix(fileName, ".yml") ||
-		strings.HasSuffix(fileName, ".env") ||
-		strings.HasSuffix(fileName, "dockerfile") ||
-		strings.HasSuffix(fileName, ".js") ||
-		strings.HasSuffix(fileName, ".ts") ||
-		strings.HasSuffix(fileName, ".py") ||
-		strings.HasSuffix(fileName, ".java") ||
-		strings.HasSuffix(fileName, ".c") ||
-		strings.HasSuffix(fileName, ".cpp") ||
-		strings.HasSuffix(fileName, ".h") ||
-		strings.HasSuffix(fileName, ".hpp") ||
-		strings.HasSuffix(fileName, ".rs") ||
-		strings.HasSuffix(fileName, ".rb") ||
-		strings.HasSuffix(fileName, ".php") ||
-		strings.HasSuffix(fileName, ".swift") ||
-		strings.HasSuffix(fileName, ".kt") ||
-		strings.HasSuffix(fileName, ".kts") ||
-		strings.HasSuffix(fileName, ".sh") ||
-		strings.HasSuffix(fileName, ".bat") ||
-		strings.HasSuffix(fileName, ".md")
 }
