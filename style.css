@@ -124,6 +124,31 @@ popover > box,
     padding: 4px;
 }
 
+.sidebar-header {
+    font-size: 0.8em;
+    font-weight: bold;
+    color: #585b70;
+    margin-top: 12px;
+    margin-bottom: 4px;
+    margin-left: 12px;
+    text-transform: uppercase;
+}
+
+.sidebar-row {
+    margin-bottom: 1px;
+}
+
+.sidebar-eject-button {
+    padding: 4px 8px;
+    color: #585b70;
+    opacity: 0.6;
+}
+
+.sidebar-eject-button:hover {
+    color: #f38ba8;
+    opacity: 1.0;
+}
+
 .sidebar-button {
     padding: 4px 8px;
     margin-bottom: 1px;
