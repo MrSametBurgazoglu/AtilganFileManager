@@ -9,6 +9,7 @@ import (
 
 	"github.com/MrSametBurgazoglu/atilgan/file_list"
 	"github.com/MrSametBurgazoglu/atilgan/fileops"
+	"github.com/MrSametBurgazoglu/atilgan/preferences"
 	"github.com/MrSametBurgazoglu/atilgan/special_path"
 	"github.com/MrSametBurgazoglu/atilgan/thumbnail"
 	"github.com/MrSametBurgazoglu/atilgan/types"
@@ -31,12 +32,12 @@ type ImageDirPreviewer struct {
 	specialPathManager *special_path.SpecialPathManager
 }
 
-func NewImageDirPreviewer(path string, changePath func(string), specialPathManager *special_path.SpecialPathManager) *ImageDirPreviewer {
+func NewImageDirPreviewer(path string, changePath func(string), specialPathManager *special_path.SpecialPathManager, parent *gtk.Window, config *preferences.Config) *ImageDirPreviewer {
 	viewer := &ImageDirPreviewer{
 		Box:                gtk.NewBox(gtk.OrientationVertical, 2),
 		Path:               path,
 		changePath:         changePath,
-		FileViewerList:     file_list.NewFileList(false, specialPathManager, nil),
+		FileViewerList:     file_list.NewFileList(false, specialPathManager, parent, config),
 		stack:              gtk.NewStack(),
 		specialPathManager: specialPathManager,
 	}

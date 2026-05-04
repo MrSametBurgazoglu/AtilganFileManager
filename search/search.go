@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/MrSametBurgazoglu/atilgan/file_list"
+	"github.com/MrSametBurgazoglu/atilgan/preferences"
+	"github.com/MrSametBurgazoglu/atilgan/special_path"
 	"github.com/MrSametBurgazoglu/atilgan/types"
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
@@ -25,7 +27,7 @@ type Search struct {
 	PathChanged   func(path string)
 }
 
-func NewSearch(path string) *Search {
+func NewSearch(path string, specialPathManager *special_path.SpecialPathManager, parent *gtk.Window, config *preferences.Config) *Search {
 	box := gtk.NewBox(gtk.OrientationVertical, 0)
 	search := &Search{
 		Box:  box,
@@ -90,7 +92,7 @@ func NewSearch(path string) *Search {
 	search.filenameEntry.ConnectActivate(func() { doSearch() })
 	search.contentEntry.ConnectActivate(func() { doSearch() })
 
-	search.fileList = file_list.NewFileList(true, nil, nil)
+	search.fileList = file_list.NewFileList(true, specialPathManager, parent, config)
 	search.fileList.SetVExpand(true)
 
 	box.Append(search.ContentPanel)

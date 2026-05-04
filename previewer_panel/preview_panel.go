@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/MrSametBurgazoglu/atilgan/fileops"
+	"github.com/MrSametBurgazoglu/atilgan/preferences"
 	"github.com/MrSametBurgazoglu/atilgan/previewer"
 	"github.com/MrSametBurgazoglu/atilgan/special_path"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
@@ -30,11 +31,11 @@ type PreviewPanel struct {
 	specialPathManager      *special_path.SpecialPathManager
 }
 
-func NewPreviewPanel(path string, changePath func(string), specialPathManager *special_path.SpecialPathManager) *PreviewPanel {
+func NewPreviewPanel(path string, changePath func(string), specialPathManager *special_path.SpecialPathManager, parent *gtk.Window, config *preferences.Config) *PreviewPanel {
 	pp := &PreviewPanel{
 		Stack:                   gtk.NewStack(),
-		imageDirPreviewer:       previewer.NewImageDirPreviewer(path, changePath, specialPathManager),
-		dirPreviewer:            previewer.NewDirPreviewer(path, changePath, specialPathManager),
+		imageDirPreviewer:       previewer.NewImageDirPreviewer(path, changePath, specialPathManager, parent, config),
+		dirPreviewer:            previewer.NewDirPreviewer(path, changePath, specialPathManager, parent, config),
 		filePreviewer:           previewer.NewFilePreviewer(),
 		imagePreviewer:          previewer.NewImagePreviewer(),
 		textPreviewer:           previewer.NewTextPreviewer(),
@@ -80,6 +81,7 @@ func (pp *PreviewPanel) Update(filePath string) {
 	pp.videoDetails.Close()
 	pp.musicDetails.Close()
 	pp.filePath = filePath
+	println("PreviewPanel Update called with:", filePath)
 
 	if filePath == "" {
 		pp.SetVisibleChildName("emptypreviewer")

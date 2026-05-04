@@ -7,6 +7,7 @@ import (
 
 	"github.com/MrSametBurgazoglu/atilgan/file_list"
 	"github.com/MrSametBurgazoglu/atilgan/fileops"
+	"github.com/MrSametBurgazoglu/atilgan/preferences"
 	"github.com/MrSametBurgazoglu/atilgan/special_path"
 	"github.com/MrSametBurgazoglu/atilgan/types"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
@@ -20,11 +21,11 @@ type MusicViewer struct {
 	stack              *gtk.Stack
 }
 
-func NewMusicViewer(mainWindow *gtk.Window, path string, pathChanged func(string), specialPathManager *special_path.SpecialPathManager) *MusicViewer {
+func NewMusicViewer(mainWindow *gtk.Window, path string, pathChanged func(string), specialPathManager *special_path.SpecialPathManager, config *preferences.Config) *MusicViewer {
 	viewer := &MusicViewer{
 		Box:                gtk.NewBox(gtk.OrientationVertical, 6),
 		Path:               path,
-		FileViewerList:     file_list.NewFileList(true, specialPathManager, mainWindow),
+		FileViewerList:     file_list.NewFileList(true, specialPathManager, mainWindow, config),
 		specialPathManager: specialPathManager,
 	}
 	viewer.SetVExpand(true)

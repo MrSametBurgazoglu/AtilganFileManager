@@ -13,6 +13,7 @@ import (
 	"github.com/MrSametBurgazoglu/atilgan/file_list"
 	"github.com/MrSametBurgazoglu/atilgan/fileops"
 	"github.com/MrSametBurgazoglu/atilgan/git"
+	"github.com/MrSametBurgazoglu/atilgan/preferences"
 	"github.com/MrSametBurgazoglu/atilgan/special_path"
 	"github.com/MrSametBurgazoglu/atilgan/types"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
@@ -38,26 +39,46 @@ type FileViewer struct {
 	IsCut              bool
 	FilterBox          *gtk.Box
 	FileViewerHistory  map[string]*FileViewHistory
-	FileViewerList     *file_list.FileGrid
+	FileViewerList     file_list.FileListView
 	GitManager         *git.GitManager
 	stack              *gtk.Stack
 	specialPathManager *special_path.SpecialPathManager
+	Config             *preferences.Config
+	mainWindow         *gtk.Window
 }
 
-func NewFileViewer(mainWindow *gtk.Window, path string, pathChanged func(string), specialPathManager *special_path.SpecialPathManager) *FileViewer {
+func NewFileViewer(mainWindow *gtk.Window, path string, pathChanged func(string), specialPathManager *special_path.SpecialPathManager, config *preferences.Config) *FileViewer {
+	sortOrder := types.SortByName
+	switch config.DefaultSortOrder {
+	case "size":
+		sortOrder = types.SortBySize
+	case "time":
+		sortOrder = types.SortByTime
+	case "type":
+		sortOrder = types.SortByType
+	}
+
 	viewer := &FileViewer{
 		Box:                gtk.NewBox(gtk.OrientationVertical, 6),
 		Path:               path,
-		SortOrder:          types.SortByName,
+		SortOrder:          sortOrder,
 		SearchValue:        "",
 		FiltersMap:         make(map[string]bool),
 		FileViewerHistory:  make(map[string]*FileViewHistory),
-		FileViewerList:     file_list.NewFileGrid(true, specialPathManager, mainWindow),
 		DefaultFilters:     []string{"Directories", "Executables", "Hidden"},
 		GitManager:         git.NewGitManager(),
 		specialPathManager: specialPathManager,
 		FilterBox:          gtk.NewBox(gtk.OrientationVertical, 6),
+		Config:             config,
+		mainWindow:         mainWindow,
 	}
+
+	if config.DefaultViewMode == "list" {
+		viewer.FileViewerList = file_list.NewFileList(true, specialPathManager, mainWindow, config)
+	} else {
+		viewer.FileViewerList = file_list.NewFileGrid(true, specialPathManager, mainWindow, config)
+	}
+	viewer.FileViewerList.SetPathChanged(pathChanged)
 	viewer.SetVExpand(true)
 	viewer.SetHExpand(true)
 
@@ -161,7 +182,7 @@ func (viewer *FileViewer) Refresh(newFilter bool) {
 			viewer.DefaultFilters = append(viewer.DefaultFilters, "Executables")
 		}
 		if hasHidden {
-			viewer.FiltersMap["Hidden"] = false
+			viewer.FiltersMap["Hidden"] = viewer.Config.ShowHidden
 			viewer.DefaultFilters = append(viewer.DefaultFilters, "Hidden")
 		}
 		viewer.UpdateFilterPopover()
@@ -351,18 +372,22 @@ func getDirItemCount(dirPath string) int {
 
 func (viewer *FileViewer) CleanCopyCutFiles() {
 	viewer.CopiedCuttedFiles = []string{}
-	viewer.FileViewerList.CleanCopyCutItems()
+	viewer.FileViewerList.CleanCopyCutFiles()
 }
 
 func (viewer *FileViewer) AddCopyCutItem(index int) {
-	item := viewer.FileViewerList.Items[index]
+	items := viewer.FileViewerList.GetItems()
+	if index < 0 || index >= len(items) {
+		return
+	}
+	item := items[index]
 	if viewer.FileViewerList.AddCopyCutItem(item.Path) {
 		viewer.CopiedCuttedFiles = append(viewer.CopiedCuttedFiles, item.Path)
 	}
 }
 
 func (viewer *FileViewer) AddSelectedToCopyCut() {
-	for idx, selected := range viewer.FileViewerList.SelectedIdxs {
+	for idx, selected := range viewer.FileViewerList.GetSelectedIdxs() {
 		if selected {
 			viewer.AddCopyCutItem(idx)
 		}
@@ -422,8 +447,12 @@ func (viewer *FileViewer) OpenTerminal() {
 		return
 	}
 
-	// Linux: Try $TERMINAL then common emulators
-	terminal := os.Getenv("TERMINAL")
+	// Linux: Try Config, then $TERMINAL then common emulators
+	terminal := viewer.Config.TerminalEmulator
+	if terminal == "" {
+		terminal = os.Getenv("TERMINAL")
+	}
+
 	if terminal == "" {
 		terminals := []string{"ptyxis", "gnome-console", "kgx", "xdg-terminal-exec", "x-terminal-emulator", "gnome-terminal", "konsole", "xfce4-terminal", "alacritty", "kitty", "terminator", "lxterminal", "mate-terminal", "xterm"}
 		for _, t := range terminals {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/MrSametBurgazoglu/atilgan/file_list"
 	"github.com/MrSametBurgazoglu/atilgan/fileops"
+	"github.com/MrSametBurgazoglu/atilgan/preferences"
 	"github.com/MrSametBurgazoglu/atilgan/special_path"
 	"github.com/MrSametBurgazoglu/atilgan/types"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
@@ -20,11 +21,11 @@ type VideoViewer struct {
 	stack              *gtk.Stack
 }
 
-func NewVideoViewer(mainWindow *gtk.Window, path string, pathChanged func(string), specialPathManager *special_path.SpecialPathManager) *VideoViewer {
+func NewVideoViewer(mainWindow *gtk.Window, path string, pathChanged func(string), specialPathManager *special_path.SpecialPathManager, config *preferences.Config) *VideoViewer {
 	viewer := &VideoViewer{
 		Box:                gtk.NewBox(gtk.OrientationVertical, 6),
 		Path:               path,
-		FileViewerList:     file_list.NewFileGrid(true, specialPathManager, mainWindow),
+		FileViewerList:     file_list.NewFileGrid(true, specialPathManager, mainWindow, config),
 		specialPathManager: specialPathManager,
 	}
 	viewer.SetVExpand(true)

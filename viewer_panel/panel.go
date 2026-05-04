@@ -3,6 +3,7 @@ package viewer_panel
 import (
 	"github.com/MrSametBurgazoglu/atilgan/fileops"
 	"github.com/MrSametBurgazoglu/atilgan/network"
+	"github.com/MrSametBurgazoglu/atilgan/preferences"
 	"github.com/MrSametBurgazoglu/atilgan/special_path"
 	"github.com/MrSametBurgazoglu/atilgan/viewer"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
@@ -17,16 +18,18 @@ type Panel struct {
 	MusicViewer   *viewer.MusicViewer
 	NetworkViewer *network.NetworkViewer
 	Stack         *gtk.Stack
+	Config        *preferences.Config
 }
 
-func NewPanel(mainWindow *gtk.Window, path string, pathChanged func(string), specialPathManager *special_path.SpecialPathManager) *Panel {
+func NewPanel(mainWindow *gtk.Window, path string, pathChanged func(string), specialPathManager *special_path.SpecialPathManager, config *preferences.Config) *Panel {
 	panel := &Panel{
 		Box:           gtk.NewBox(gtk.OrientationHorizontal, 0),
 		Path:          path,
-		FileViewer:    viewer.NewFileViewer(mainWindow, path, pathChanged, specialPathManager),
-		VideoViewer:   viewer.NewVideoViewer(mainWindow, path, pathChanged, specialPathManager),
-		PictureViewer: viewer.NewPictureViewer(mainWindow, path, pathChanged, specialPathManager),
-		MusicViewer:   viewer.NewMusicViewer(mainWindow, path, pathChanged, specialPathManager),
+		FileViewer:    viewer.NewFileViewer(mainWindow, path, pathChanged, specialPathManager, config),
+		VideoViewer:   viewer.NewVideoViewer(mainWindow, path, pathChanged, specialPathManager, config),
+		PictureViewer: viewer.NewPictureViewer(mainWindow, path, pathChanged, specialPathManager, config),
+		MusicViewer:   viewer.NewMusicViewer(mainWindow, path, pathChanged, specialPathManager, config),
+		Config:        config,
 	}
 
 	networkManager := specialPathManager.Paths["network"].(*network.Network)

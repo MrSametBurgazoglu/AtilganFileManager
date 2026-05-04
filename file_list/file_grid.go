@@ -8,12 +8,14 @@ import (
 	"strings"
 
 	"github.com/MrSametBurgazoglu/atilgan/fileops"
+	"github.com/MrSametBurgazoglu/atilgan/preferences"
 	"github.com/MrSametBurgazoglu/atilgan/rename_popup"
 	"github.com/MrSametBurgazoglu/atilgan/special_path"
 	"github.com/MrSametBurgazoglu/atilgan/tag_popup"
 	"github.com/MrSametBurgazoglu/atilgan/theme"
 	"github.com/MrSametBurgazoglu/atilgan/thumbnail"
 	"github.com/MrSametBurgazoglu/atilgan/types"
+	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
 	"github.com/diamondburned/gotk4/pkg/cairo"
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
 	"github.com/diamondburned/gotk4/pkg/gdkpixbuf/v2"
@@ -22,9 +24,6 @@ import (
 )
 
 const (
-	gridItemWidth       = 90
-	gridItemHeight      = 95
-	gridIconSize        = 32
 	categoryHeaderWidth = 20
 	categoryPadding     = 8
 	categoryGap         = 10
@@ -57,6 +56,12 @@ type FileGrid struct {
 	specialPathManager *special_path.SpecialPathManager
 	parent             *gtk.Window
 	textureCache       map[string]*gdk.Texture
+	Config             *preferences.Config
+
+	// Dynamic dimensions
+	itemWidth  int
+	itemHeight int
+	iconSize   int
 
 	SelectionChanged func(index int)
 	PathChanged      func(path string)
@@ -65,7 +70,13 @@ type FileGrid struct {
 	KeyLeftPressed   func()
 }
 
-func NewFileGrid(canSelect bool, specialPathManager *special_path.SpecialPathManager, parent *gtk.Window) *FileGrid {
+func (fl *FileGrid) updateDimensions() {
+	fl.iconSize = fl.Config.IconSize
+	fl.itemWidth = fl.iconSize + 58
+	fl.itemHeight = fl.iconSize + 63
+}
+
+func NewFileGrid(canSelect bool, specialPathManager *special_path.SpecialPathManager, parent *gtk.Window, config *preferences.Config) *FileGrid {
 	fl := &FileGrid{
 		ScrolledWindow:     gtk.NewScrolledWindow(),
 		SelectedIDX:        0,
@@ -80,7 +91,9 @@ func NewFileGrid(canSelect bool, specialPathManager *special_path.SpecialPathMan
 		specialPathManager: specialPathManager,
 		parent:             parent,
 		textureCache:       make(map[string]*gdk.Texture),
+		Config:             config,
 	}
+	fl.updateDimensions()
 
 	fl.DrawingArea.SetHExpand(true)
 	fl.DrawingArea.SetDrawFunc(fl.onDraw)
@@ -202,6 +215,38 @@ func (fl *FileGrid) SetItems(items []*types.ListItem) {
 	fl.DrawingArea.QueueDraw()
 }
 
+func (fl *FileGrid) SetCanFocus(canFocus bool) {
+	fl.CanFocus = canFocus
+}
+
+func (fl *FileGrid) SetKeyLeftPressed(f func()) {
+	fl.KeyLeftPressed = f
+}
+
+func (fl *FileGrid) SetKeyRightPressed(f func()) {
+	fl.KeyRightPressed = f
+}
+
+func (fl *FileGrid) SetPinRequested(f func(string)) {
+	fl.PinRequested = f
+}
+
+func (fl *FileGrid) FocusDrawingArea() {
+	fl.DrawingArea.GrabFocus()
+}
+
+func (fl *FileGrid) GetItems() []*types.ListItem {
+	return fl.Items
+}
+
+func (fl *FileGrid) GetSelectedIDX() int {
+	return fl.SelectedIDX
+}
+
+func (fl *FileGrid) GetSelectedIdxs() map[int]bool {
+	return fl.SelectedIdxs
+}
+
 func (fl *FileGrid) AddItem(item *types.ListItem) {
 	fl.Items = append(fl.Items, item)
 	fl.DrawingArea.QueueDraw()
@@ -258,9 +303,22 @@ func (fl *FileGrid) AddCopyCutItem(path string) bool {
 	return true
 }
 
-func (fl *FileGrid) CleanCopyCutItems() {
+func (fl *FileGrid) CleanCopyCutFiles() {
 	fl.CopyCutPaths = make([]string, 0)
 	fl.DrawingArea.QueueDraw()
+}
+
+func (fl *FileGrid) Refresh(newFilter bool) {
+	fl.updateDimensions()
+	fl.DrawingArea.QueueDraw()
+}
+
+func (fl *FileGrid) SetPathChanged(f func(string)) {
+	fl.PathChanged = f
+}
+
+func (fl *FileGrid) SetSelectionChanged(f func(int)) {
+	fl.SelectionChanged = f
 }
 
 func (fl *FileGrid) onDraw(da *gtk.DrawingArea, cr *cairo.Context, w, h int) {
@@ -290,8 +348,8 @@ func (fl *FileGrid) onDraw(da *gtk.DrawingArea, cr *cairo.Context, w, h int) {
 			row := i / cat.NumCols
 			col := i % cat.NumCols
 			
-			itemX := cat.X + categoryHeaderWidth + categoryPadding + col*gridItemWidth
-			itemY := cat.Y + categoryPadding + row*gridItemHeight
+			itemX := cat.X + categoryHeaderWidth + categoryPadding + col*fl.itemWidth
+			itemY := cat.Y + categoryPadding + row*fl.itemHeight
 			
 			fl.drawGridItem(cr, cat.ItemIdxs[i], item, itemX, itemY)
 		}
@@ -321,11 +379,11 @@ func (fl *FileGrid) layoutCategories(w int) ([]Category, int) {
 		numItems := len(cat.Items)
 		
 		availableItemsWidth := w - categoryHeaderWidth - 2*categoryPadding - categoryGap
-		if availableItemsWidth < gridItemWidth {
-			availableItemsWidth = gridItemWidth
+		if availableItemsWidth < fl.itemWidth {
+			availableItemsWidth = fl.itemWidth
 		}
 
-		cat.NumCols = availableItemsWidth / gridItemWidth
+		cat.NumCols = availableItemsWidth / fl.itemWidth
 		if cat.NumCols > numItems {
 			cat.NumCols = numItems
 		}
@@ -334,8 +392,8 @@ func (fl *FileGrid) layoutCategories(w int) ([]Category, int) {
 		}
 
 		cat.NumRows = (numItems + cat.NumCols - 1) / cat.NumCols
-		cat.Width = categoryHeaderWidth + cat.NumCols*gridItemWidth + 2*categoryPadding
-		cat.Height = cat.NumRows*gridItemHeight + 2*categoryPadding
+		cat.Width = categoryHeaderWidth + cat.NumCols*fl.itemWidth + 2*categoryPadding
+		cat.Height = cat.NumRows*fl.itemHeight + 2*categoryPadding
 		if cat.Height < 60 {
 			cat.Height = 60
 		}
@@ -402,28 +460,28 @@ func (fl *FileGrid) drawGridItem(cr *cairo.Context, idx int, item *types.ListIte
 
 	if isSelected {
 		cr.SetSourceRGBA(float64(fl.colorTheme.SelectedBgColor.Red()), float64(fl.colorTheme.SelectedBgColor.Green()), float64(fl.colorTheme.SelectedBgColor.Blue()), float64(fl.colorTheme.SelectedBgColor.Alpha()*1.5))
-		roundedRectangle(cr, float64(x)+padding, float64(y)+padding, float64(gridItemWidth)-2*padding, float64(gridItemHeight)-2*padding, 10)
+		roundedRectangle(cr, float64(x)+padding, float64(y)+padding, float64(fl.itemWidth)-2*padding, float64(fl.itemHeight)-2*padding, 10)
 		cr.Fill()
 
 		if isFocused {
 			cr.SetSourceRGBA(float64(fl.colorTheme.AccentColor.Red()), float64(fl.colorTheme.AccentColor.Green()), float64(fl.colorTheme.AccentColor.Blue()), 0.8)
 			cr.SetLineWidth(2)
-			roundedRectangle(cr, float64(x)+padding, float64(y)+padding, float64(gridItemWidth)-2*padding, float64(gridItemHeight)-2*padding, 10)
+			roundedRectangle(cr, float64(x)+padding, float64(y)+padding, float64(fl.itemWidth)-2*padding, float64(fl.itemHeight)-2*padding, 10)
 			cr.Stroke()
 		}
 	} else if isHovered {
 		cr.SetSourceRGBA(float64(fl.colorTheme.HoverBgColor.Red()), float64(fl.colorTheme.HoverBgColor.Green()), float64(fl.colorTheme.HoverBgColor.Blue()), 0.3)
-		roundedRectangle(cr, float64(x)+padding, float64(y)+padding, float64(gridItemWidth)-2*padding, float64(gridItemHeight)-2*padding, 10)
+		roundedRectangle(cr, float64(x)+padding, float64(y)+padding, float64(fl.itemWidth)-2*padding, float64(fl.itemHeight)-2*padding, 10)
 		cr.Fill()
 	} else if slices.Contains(fl.CopyCutPaths, item.Path) {
 		cr.SetSourceRGBA(float64(fl.colorTheme.CopyCutBgColor.Red()), float64(fl.colorTheme.CopyCutBgColor.Green()), float64(fl.colorTheme.CopyCutBgColor.Blue()), 0.4)
-		roundedRectangle(cr, float64(x)+padding, float64(y)+padding, float64(gridItemWidth)-2*padding, float64(gridItemHeight)-2*padding, 10)
+		roundedRectangle(cr, float64(x)+padding, float64(y)+padding, float64(fl.itemWidth)-2*padding, float64(fl.itemHeight)-2*padding, 10)
 		cr.Fill()
 	}
 
 	// Icon positioning
 	var texture *gdk.Texture
-	if !item.IsDir {
+	if !item.IsDir && fl.Config.EnableThumbnails {
 		if cached, ok := fl.textureCache[item.Path]; ok {
 			texture = cached
 		} else {
@@ -437,10 +495,10 @@ func (fl *FileGrid) drawGridItem(cr *cairo.Context, idx int, item *types.ListIte
 		pixbuf := gdk.PixbufGetFromTexture(texture)
 		if pixbuf != nil {
 			w, h := pixbuf.Width(), pixbuf.Height()
-			scale := float64(gridIconSize) / float64(max(w, h))
+			scale := float64(fl.iconSize) / float64(max(w, h))
 			newW, newH := int(float64(w)*scale), int(float64(h)*scale)
 			pixbuf = pixbuf.ScaleSimple(newW, newH, gdkpixbuf.InterpBilinear)
-			gdk.CairoSetSourcePixbuf(cr, pixbuf, float64(x+(gridItemWidth-newW)/2), iconY+float64(gridIconSize-newH)/2)
+			gdk.CairoSetSourcePixbuf(cr, pixbuf, float64(x+(fl.itemWidth-newW)/2), iconY+float64(fl.iconSize-newH)/2)
 			cr.Paint()
 		}
 	} else {
@@ -449,12 +507,12 @@ func (fl *FileGrid) drawGridItem(cr *cairo.Context, idx int, item *types.ListIte
 			iconName = fileops.GetIconForFolder(item.Path)
 		}
 
-		paintable := fl.iconTheme.LookupIcon(iconName, nil, gridIconSize, 1, gtk.TextDirNone, 0)
+		paintable := fl.iconTheme.LookupIcon(iconName, nil, fl.iconSize, 1, gtk.TextDirNone, 0)
 		if paintable == nil && item.IsDir {
-			paintable = fl.iconTheme.LookupIcon("folder", nil, gridIconSize, 1, gtk.TextDirNone, 0)
+			paintable = fl.iconTheme.LookupIcon("folder", nil, fl.iconSize, 1, gtk.TextDirNone, 0)
 		}
 		if paintable == nil && !item.IsDir {
-			paintable = fl.iconTheme.LookupIcon("text-x-generic", nil, gridIconSize, 1, gtk.TextDirNone, 0)
+			paintable = fl.iconTheme.LookupIcon("text-x-generic", nil, fl.iconSize, 1, gtk.TextDirNone, 0)
 		}
 		if paintable != nil {
 			file := paintable.File()
@@ -463,10 +521,10 @@ func (fl *FileGrid) drawGridItem(cr *cairo.Context, idx int, item *types.ListIte
 				if err == nil {
 					pixbuf := gdk.PixbufGetFromTexture(tex)
 					if pixbuf != nil {
-						if pixbuf.Width() != gridIconSize || pixbuf.Height() != gridIconSize {
-							pixbuf = pixbuf.ScaleSimple(gridIconSize, gridIconSize, gdkpixbuf.InterpBilinear)
+						if pixbuf.Width() != fl.iconSize || pixbuf.Height() != fl.iconSize {
+							pixbuf = pixbuf.ScaleSimple(fl.iconSize, fl.iconSize, gdkpixbuf.InterpBilinear)
 						}
-						gdk.CairoSetSourcePixbuf(cr, pixbuf, float64(x+(gridItemWidth-gridIconSize)/2), iconY)
+						gdk.CairoSetSourcePixbuf(cr, pixbuf, float64(x+(fl.itemWidth-fl.iconSize)/2), iconY)
 						cr.Paint()
 					}
 				}
@@ -484,17 +542,17 @@ func (fl *FileGrid) drawGridItem(cr *cairo.Context, idx int, item *types.ListIte
 	cr.SelectFontFace("Sans", cairo.FontSlantNormal, cairo.FontWeightNormal)
 	cr.SetFontSize(fl.themeConfig.Fonts.FilenameSize)
 	
-	displayName := fl.truncateText(cr, item.Name, float64(gridItemWidth)-16)
+	displayName := fl.truncateText(cr, item.Name, float64(fl.itemWidth)-16)
 	
 	extents := cr.TextExtents(displayName)
-	cr.MoveTo(float64(x)+(float64(gridItemWidth)-extents.Width)/2, iconY+float64(gridIconSize)+20)
+	cr.MoveTo(float64(x)+(float64(fl.itemWidth)-extents.Width)/2, iconY+float64(fl.iconSize)+20)
 	cr.ShowText(displayName)
 
 	// Git Status Indicator
 	if item.GitStatus != "" && item.GitStatus != "unchanged" {
 		dotSize := 4.0
-		dotX := float64(x) + (float64(gridItemWidth)+extents.Width)/2 + 4
-		dotY := iconY + float64(gridIconSize) + 20 - extents.Height/2
+		dotX := float64(x) + (float64(fl.itemWidth)+extents.Width)/2 + 4
+		dotY := iconY + float64(fl.iconSize) + 20 - extents.Height/2
 		
 		switch item.GitStatus {
 		case "modified":
@@ -521,7 +579,7 @@ func (fl *FileGrid) drawGridItem(cr *cairo.Context, idx int, item *types.ListIte
 		meta = fileops.GetFileSizeAsString(item.Size)
 	}
 	extents = cr.TextExtents(meta)
-	cr.MoveTo(float64(x)+(float64(gridItemWidth)-extents.Width)/2, iconY+float64(gridIconSize)+35)
+	cr.MoveTo(float64(x)+(float64(fl.itemWidth)-extents.Width)/2, iconY+float64(fl.iconSize)+35)
 	cr.ShowText(meta)
 }
 
@@ -678,8 +736,8 @@ func (fl *FileGrid) getItemBounds(idx int, w int) (top, bottom int) {
 		for i, itemIdx := range cat.ItemIdxs {
 			if itemIdx == idx {
 				row := i / cat.NumCols
-				itemY := cat.Y + categoryPadding + row*gridItemHeight
-				return itemY, itemY + gridItemHeight
+				itemY := cat.Y + categoryPadding + row*fl.itemHeight
+				return itemY, itemY + fl.itemHeight
 			}
 		}
 	}
@@ -703,8 +761,8 @@ func (fl *FileGrid) ItemAt(x, y int) int {
 				continue
 			}
 			
-			col := relX / gridItemWidth
-			row := relY / gridItemHeight
+			col := relX / fl.itemWidth
+			row := relY / fl.itemHeight
 			
 			if col >= cat.NumCols {
 				continue
@@ -802,18 +860,39 @@ func (fl *FileGrid) newContextMenuController(da *gtk.DrawingArea) *gtk.GestureCl
 
 			delete := gtk.NewButtonWithLabel("Delete Selected")
 			delete.Connect("clicked", func() {
-				for i, selected := range fl.SelectedIdxs {
-					if selected {
-						cmd := exec.Command("gio", "trash", fl.Items[i].Path)
-						cmd.Run()
+				performDelete := func() {
+					for i, selected := range fl.SelectedIdxs {
+						if selected {
+							cmd := exec.Command("gio", "trash", fl.Items[i].Path)
+							cmd.Run()
+						}
 					}
+					glib.IdleAdd(func() {
+						if fl.PathChanged != nil {
+							fl.PathChanged("")
+						}
+						pop.Popdown()
+					})
 				}
-				glib.IdleAdd(func() {
-					if fl.PathChanged != nil {
-						fl.PathChanged("")
-					}
-					pop.Popdown()
-				})
+
+				if fl.Config.ConfirmDelete {
+					dialog := adw.NewMessageDialog(fl.parent, "Confirm Deletion", "Are you sure you want to move the selected items to trash?")
+					dialog.AddResponse("cancel", "Cancel")
+					dialog.AddResponse("delete", "Delete")
+					dialog.SetResponseAppearance("delete", adw.ResponseDestructive)
+					dialog.SetDefaultResponse("cancel")
+					dialog.SetCloseResponse("cancel")
+
+					dialog.ConnectResponse(func(response string) {
+						if response == "delete" {
+							performDelete()
+						}
+						dialog.Destroy()
+					})
+					dialog.Present()
+				} else {
+					performDelete()
+				}
 			})
 
 			addTag := gtk.NewButtonWithLabel("Add Tag")

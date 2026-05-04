@@ -9,6 +9,7 @@ import (
 
 	"github.com/MrSametBurgazoglu/atilgan/file_list"
 	"github.com/MrSametBurgazoglu/atilgan/fileops"
+	"github.com/MrSametBurgazoglu/atilgan/preferences"
 	"github.com/MrSametBurgazoglu/atilgan/special_path"
 	"github.com/MrSametBurgazoglu/atilgan/types"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
@@ -24,12 +25,12 @@ type DirPreviewer struct {
 	specialPathManager *special_path.SpecialPathManager
 }
 
-func NewDirPreviewer(path string, changePath func(string), specialPathManager *special_path.SpecialPathManager) *DirPreviewer {
+func NewDirPreviewer(path string, changePath func(string), specialPathManager *special_path.SpecialPathManager, parent *gtk.Window, config *preferences.Config) *DirPreviewer {
 	viewer := &DirPreviewer{
 		Box:                gtk.NewBox(gtk.OrientationVertical, 2),
 		Path:               path,
 		changePath:         changePath,
-		FileViewerList:     file_list.NewFileList(false, specialPathManager, nil),
+		FileViewerList:     file_list.NewFileList(false, specialPathManager, parent, config),
 		specialPathManager: specialPathManager,
 	}
 	viewer.folderIcon = gtk.NewImageFromIconName("folder-symbolic")

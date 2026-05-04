@@ -3,6 +3,7 @@ package workspace
 import (
 	"path/filepath"
 
+	"github.com/MrSametBurgazoglu/atilgan/preferences"
 	"github.com/MrSametBurgazoglu/atilgan/special_path"
 	"github.com/MrSametBurgazoglu/atilgan/viewer_panel"
 	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
@@ -17,9 +18,10 @@ type Workspace struct {
 	OnPathChanged      func(string)
 	SetupPanel         func(*viewer_panel.Panel)
 	PagePanels         map[*adw.TabPage]*viewer_panel.Panel
+	Config             *preferences.Config
 }
 
-func NewWorkspace(mainWindow *gtk.Window, specialPathManager *special_path.SpecialPathManager, onPathChanged func(string)) *Workspace {
+func NewWorkspace(mainWindow *gtk.Window, specialPathManager *special_path.SpecialPathManager, onPathChanged func(string), config *preferences.Config) *Workspace {
 	ws := &Workspace{
 		TabView:            adw.NewTabView(),
 		TabBar:             adw.NewTabBar(),
@@ -27,6 +29,7 @@ func NewWorkspace(mainWindow *gtk.Window, specialPathManager *special_path.Speci
 		SpecialPathManager: specialPathManager,
 		OnPathChanged:      onPathChanged,
 		PagePanels:         make(map[*adw.TabPage]*viewer_panel.Panel),
+		Config:             config,
 	}
 	ws.TabBar.SetView(ws.TabView)
 
@@ -34,7 +37,7 @@ func NewWorkspace(mainWindow *gtk.Window, specialPathManager *special_path.Speci
 }
 
 func (ws *Workspace) NewTab(path string) *adw.TabPage {
-	panel := viewer_panel.NewPanel(ws.MainWindow, path, ws.OnPathChanged, ws.SpecialPathManager)
+	panel := viewer_panel.NewPanel(ws.MainWindow, path, ws.OnPathChanged, ws.SpecialPathManager, ws.Config)
 	if ws.SetupPanel != nil {
 		ws.SetupPanel(panel)
 	}

@@ -10,6 +10,7 @@ import (
 	"github.com/MrSametBurgazoglu/atilgan/fileops"
 	"github.com/MrSametBurgazoglu/atilgan/header"
 	"github.com/MrSametBurgazoglu/atilgan/pathbar"
+	"github.com/MrSametBurgazoglu/atilgan/preferences"
 	"github.com/MrSametBurgazoglu/atilgan/previewer"
 	"github.com/MrSametBurgazoglu/atilgan/previewer_panel"
 	"github.com/MrSametBurgazoglu/atilgan/rename_popup"
@@ -42,17 +43,47 @@ type MainBox struct {
 	Search         *search.Search
 	SideBar        *sidebar.Sidebar
 	HeaderBar      *header.HeaderBar
+	Config         *preferences.Config
+	ContentPaned   *gtk.Paned
+	RightBox       *gtk.Box
+}
+
+func (m *MainBox) applyPreferences() {
+	styleManager := adw.StyleManagerGetDefault()
+	switch m.Config.Theme {
+	case "light":
+		styleManager.SetColorScheme(adw.ColorSchemeForceLight)
+	case "dark":
+		styleManager.SetColorScheme(adw.ColorSchemeForceDark)
+	default:
+		styleManager.SetColorScheme(adw.ColorSchemeDefault)
+	}
+
+	if m.RightBox != nil {
+		m.RightBox.SetVisible(m.Config.EnablePreviewPane)
+	}
+
+	m.NavigationSplitView.SetMaxSidebarWidth(float64(m.Config.SidebarWidth))
+
+	// Refresh all tabs
+	if m.Workspace != nil {
+		for _, panel := range m.Workspace.PagePanels {
+			panel.FileViewer.Refresh(true)
+		}
+	}
 }
 
 func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) *MainBox {
 	splitView := adw.NewNavigationSplitView()
-	splitView.SetMaxSidebarWidth(180)
-	splitView.SetSidebarWidthFraction(0.15)
 	mainBox := &MainBox{
 		NavigationSplitView: splitView,
 		MainWindow:          mainWindow,
 		HeaderBar:           headerBar,
+		Config:              preferences.LoadConfig(),
 	}
+
+	splitView.SetMaxSidebarWidth(float64(mainBox.Config.SidebarWidth))
+	splitView.SetSidebarWidthFraction(0.15)
 
 	curdir, err := os.Getwd()
 	if err != nil {
@@ -68,7 +99,7 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 	mainBox.Pathbar = pathbar.NewPathBar(mainBox.pathChanged)
 	mainBox.Pathbar.UpdatePathBar(curdir)
 
-	mainBox.Workspace = workspace.NewWorkspace(&mainWindow.Window, mainBox.SpecialPaths, mainBox.pathChanged)
+	mainBox.Workspace = workspace.NewWorkspace(&mainWindow.Window, mainBox.SpecialPaths, mainBox.pathChanged, mainBox.Config)
 	mainBox.Workspace.SetupPanel = mainBox.setupPanel
 
 	headerBar.SearchButton.ConnectClicked(func() {
@@ -85,7 +116,7 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 		}
 	})
 
-	mainBox.Search = search.NewSearch(curdir)
+	mainBox.Search = search.NewSearch(curdir, mainBox.SpecialPaths, &mainWindow.Window, mainBox.Config)
 	mainBox.Search.SetVisible(false)
 	mainBox.Search.PathChanged = mainBox.pathChanged
 
@@ -118,6 +149,7 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 	contentPaned.SetPosition(950)
 	contentPaned.SetWideHandle(true)
 	contentVBox.Append(contentPaned)
+	mainBox.ContentPaned = contentPaned
 	
 	contentToolbar.SetContent(contentVBox)
 
@@ -140,8 +172,9 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 	rightBox.SetVExpand(true)
 	rightBox.SetSizeRequest(215, -1)
 	contentPaned.SetEndChild(rightBox)
+	mainBox.RightBox = rightBox
 
-	mainBox.PreviewerPanel = previewer_panel.NewPreviewPanel(curdir, mainBox.pathChanged, mainBox.SpecialPaths)
+	mainBox.PreviewerPanel = previewer_panel.NewPreviewPanel(curdir, mainBox.pathChanged, mainBox.SpecialPaths, &mainWindow.Window, mainBox.Config)
 	rightBox.Append(mainBox.PreviewerPanel)
 
 	mainBox.Workspace.NewTab(curdir)
@@ -166,6 +199,11 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 		mainBox.Workspace.NewTab(mainBox.Path)
 	}
 
+	mainBox.SideBar.OnPreferences = func() {
+		dialog := preferences.NewPreferencesDialog(&mainWindow.Window, mainBox.Config)
+		dialog.OnChanged = mainBox.applyPreferences
+		dialog.Show()
+	}
 	copyCutPreviewer := previewer.NewCopyCutPreviewer()
 	copyCutPreviewer.SetVisible(false)
 	copyCutPreviewer.OnClear = func() {
@@ -204,7 +242,7 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 		if activePanel == nil {
 			return true
 		}
-		selectedItem := activePanel.FileViewer.FileViewerList.Items[activePanel.FileViewer.FileViewerList.SelectedIDX]
+		selectedItem := activePanel.FileViewer.FileViewerList.GetItems()[activePanel.FileViewer.FileViewerList.GetSelectedIDX()]
 		renameWindow := rename_popup.NewRenameWindow(mainBox.Path, selectedItem.Path)
 		renameWindow.SetTransientFor(&mainWindow.Window)
 		renameWindow.SetVisible(true)
@@ -226,10 +264,10 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 		if activePanel.FileViewer.SearchRevealer.RevealChild() {
 			activePanel.FileViewer.SearchEntry.GrabFocus()
 			activePanel.FileViewer.SearchRevealer.SetVisible(true)
-			activePanel.FileViewer.FileViewerList.CanFocus = false
+			activePanel.FileViewer.FileViewerList.SetCanFocus(false)
 		} else {
 			activePanel.FileViewer.SearchRevealer.SetVisible(false)
-			activePanel.FileViewer.FileViewerList.CanFocus = true
+			activePanel.FileViewer.FileViewerList.SetCanFocus(true)
 		}
 		return true
 	}))
@@ -259,7 +297,7 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 		copyCutPreviewer.SetVisible(true)
 		
 		// For now, still just copy the primary focused file to system clipboard
-		clipboard.CopyFileToClipboard(gio.NewFileForPath(activePanel.FileViewer.FileViewerList.Items[activePanel.FileViewer.FileViewerList.SelectedIDX].Path))
+		clipboard.CopyFileToClipboard(gio.NewFileForPath(activePanel.FileViewer.FileViewerList.GetItems()[activePanel.FileViewer.FileViewerList.GetSelectedIDX()].Path))
 		return true
 	}))
 	controller.AddShortcut(copyShortcut)
@@ -360,6 +398,8 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 
 	mainBox.updatePreviewer()
 
+	mainBox.applyPreferences()
+
 	return mainBox
 }
 func (m *MainBox) getActivePanel() *viewer_panel.Panel {
@@ -374,27 +414,27 @@ func (m *MainBox) getActivePanel() *viewer_panel.Panel {
 }
 
 func (m *MainBox) setupPanel(panel *viewer_panel.Panel) {
-	panel.FileViewer.FileViewerList.SelectionChanged = func(index int) {
+	panel.FileViewer.FileViewerList.SetSelectionChanged(func(index int) {
 		m.updatePreviewer()
-	}
-	panel.FileViewer.FileViewerList.PathChanged = m.pathChanged
+	})
+	panel.FileViewer.FileViewerList.SetPathChanged(m.pathChanged)
 
-	panel.VideoViewer.FileViewerList.SelectionChanged = func(index int) {
+	panel.VideoViewer.FileViewerList.SetSelectionChanged(func(index int) {
 		m.updatePreviewer()
-	}
-	panel.VideoViewer.FileViewerList.PathChanged = m.pathChanged
+	})
+	panel.VideoViewer.FileViewerList.SetPathChanged(m.pathChanged)
 
 	panel.PictureViewer.SelectionChanged = func(index int) {
 		m.updatePreviewer()
 	}
 	// Note: PathChanged is passed into NewPictureViewer directly now.
 
-	panel.MusicViewer.FileViewerList.SelectionChanged = func(index int) {
+	panel.MusicViewer.FileViewerList.SetSelectionChanged(func(index int) {
 		m.updatePreviewer()
-	}
-	panel.MusicViewer.FileViewerList.PathChanged = m.pathChanged
+	})
+	panel.MusicViewer.FileViewerList.SetPathChanged(m.pathChanged)
 
-	panel.FileViewer.FileViewerList.KeyLeftPressed = func() {
+	panel.FileViewer.FileViewerList.SetKeyLeftPressed(func() {
 		specialPath := m.SpecialPaths.GetPath(panel.FileViewer.Path)
 		if specialPath != nil {
 			m.pathChanged(specialPath.GetParentPath())
@@ -406,23 +446,26 @@ func (m *MainBox) setupPanel(panel *viewer_panel.Panel) {
 				panel.FileViewer.FileViewerList.SetItem(selectHistory.Index)
 			}
 		}
-	}
+	})
 
-	panel.FileViewer.FileViewerList.PinRequested = func(path string) {
+	panel.FileViewer.FileViewerList.SetPinRequested(func(path string) {
 		m.SideBar.AddPin(path)
-	}
+	})
 
-	panel.FileViewer.FileViewerList.KeyRightPressed = func() {
-		selectedIndex := panel.FileViewer.FileViewerList.SelectedIDX
-		selectedItem := panel.FileViewer.FileViewerList.Items[selectedIndex]
-		panel.FileViewer.FileViewerHistory[panel.Path] = &viewer.FileViewHistory{
-			Path:  selectedItem.Path,
-			Index: selectedIndex,
+	panel.FileViewer.FileViewerList.SetKeyRightPressed(func() {
+		selectedIndex := panel.FileViewer.FileViewerList.GetSelectedIDX()
+		items := panel.FileViewer.FileViewerList.GetItems()
+		if selectedIndex >= 0 && selectedIndex < len(items) {
+			selectedItem := items[selectedIndex]
+			panel.FileViewer.FileViewerHistory[panel.Path] = &viewer.FileViewHistory{
+				Path:  selectedItem.Path,
+				Index: selectedIndex,
+			}
+			if selectedItem.IsDir {
+				m.pathChanged(selectedItem.Path)
+			}
 		}
-		if selectedItem.IsDir {
-			m.pathChanged(selectedItem.Path)
-		}
-	}
+	})
 }
 
 func main() {
@@ -469,7 +512,7 @@ func activate(app *adw.Application) {
 	window.SetVisible(true)
 	activePanel := mainBox.getActivePanel()
 	if activePanel != nil {
-		activePanel.FileViewer.FileViewerList.DrawingArea.GrabFocus()
+		activePanel.FileViewer.FileViewerList.FocusDrawingArea()
 	}
 }
 
@@ -524,7 +567,6 @@ func (m *MainBox) updatePreviewer() {
 	}
 
 	path := activePanel.Path
-	
 	var items []*types.ListItem
 	var selectedIdxs map[int]bool
 	var selectedIdx int
@@ -542,9 +584,9 @@ func (m *MainBox) updatePreviewer() {
 		selectedIdxs = nil
 		selectedIdx = activePanel.MusicViewer.FileViewerList.SelectedIDX
 	} else if activePanel.FileViewer != nil && activePanel.FileViewer.FileViewerList != nil {
-		items = activePanel.FileViewer.FileViewerList.Items
-		selectedIdxs = activePanel.FileViewer.FileViewerList.SelectedIdxs
-		selectedIdx = activePanel.FileViewer.FileViewerList.SelectedIDX
+		items = activePanel.FileViewer.FileViewerList.GetItems()
+		selectedIdxs = activePanel.FileViewer.FileViewerList.GetSelectedIdxs()
+		selectedIdx = activePanel.FileViewer.FileViewerList.GetSelectedIDX()
 	}
 
 	if items == nil || len(items) == 0 {

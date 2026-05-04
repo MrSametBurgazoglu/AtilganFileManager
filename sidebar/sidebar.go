@@ -19,6 +19,7 @@ type Sidebar struct {
 	currentPath  string
 	pathChanged  func(string)
 	OnNewTab     func()
+	OnPreferences func()
 }
 
 func NewSidebar(pathChanged func(string)) *Sidebar {
@@ -45,6 +46,14 @@ func NewSidebar(pathChanged func(string)) *Sidebar {
 		}
 	})
 	sidebar.locationsBox.Append(newTabBtn)
+
+	prefBtn := sidebar.createButton("emblem-system-symbolic", "Preferences", "")
+	prefBtn.ConnectClicked(func() {
+		if sidebar.OnPreferences != nil {
+			sidebar.OnPreferences()
+		}
+	})
+	sidebar.locationsBox.Append(prefBtn)
 
 	pinsLabel := gtk.NewLabel("Bookmarks")
 	pinsLabel.AddCSSClass("caption")
