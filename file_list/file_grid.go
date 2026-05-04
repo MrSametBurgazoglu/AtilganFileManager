@@ -323,10 +323,28 @@ func (fl *FileGrid) SetSelectionChanged(f func(int)) {
 
 func (fl *FileGrid) onDraw(da *gtk.DrawingArea, cr *cairo.Context, w, h int) {
 	sc := da.StyleContext()
+
+	if bg, ok := sc.LookupColor("view_bg_color"); ok {
+		fl.colorTheme.BackgroundColor = *bg
+	} else if bg, ok := sc.LookupColor("window_bg_color"); ok {
+		fl.colorTheme.BackgroundColor = *bg
+	}
+
+	if fg, ok := sc.LookupColor("view_fg_color"); ok {
+		fl.colorTheme.TextColor = *fg
+	} else if fg, ok := sc.LookupColor("window_fg_color"); ok {
+		fl.colorTheme.TextColor = *fg
+	}
+
 	if accent, ok := sc.LookupColor("accent_bg_color"); ok {
 		fl.colorTheme.AccentColor = *accent
 		fl.colorTheme.SelectedBgColor = gdk.NewRGBA(accent.Red(), accent.Green(), accent.Blue(), 0.15)
 		fl.colorTheme.HoverBgColor = gdk.NewRGBA(accent.Red(), accent.Green(), accent.Blue(), 0.05)
+		fl.colorTheme.SelectedTextColor = *accent
+	}
+
+	if headerBg, ok := sc.LookupColor("headerbar_bg_color"); ok {
+		fl.colorTheme.HeaderBackgroundColor = gdk.NewRGBA(headerBg.Red(), headerBg.Green(), headerBg.Blue(), 0.3)
 	}
 
 	categories, totalHeight := fl.layoutCategories(w)

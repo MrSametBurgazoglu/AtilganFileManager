@@ -61,17 +61,17 @@ type ColorTheme struct {
 	AccentColor           gdk.RGBA
 }
 
-// NewColorTheme creates a new color theme with Aurora Dark palette
+// NewColorTheme creates a new color theme with Adwaita-compatible defaults
 func NewColorTheme() *ColorTheme {
 	return &ColorTheme{
-		BackgroundColor:       gdk.NewRGBA(30.0/255, 30.0/255, 46.0/255, 1),    // #1e1e2e
-		TextColor:             gdk.NewRGBA(205.0/255, 214.0/255, 244.0/255, 1), // #cdd6f4
-		SelectedBgColor:       gdk.NewRGBA(138.0/255, 173.0/255, 244.0/255, 0.2),
-		SelectedTextColor:     gdk.NewRGBA(137.0/255, 180.0/255, 250.0/255, 1), // #89b4fa
-		HeaderBackgroundColor: gdk.NewRGBA(24.0/255, 24.0/255, 37.0/255, 1),    // #181825
-		HeaderTextColor:       gdk.NewRGBA(186.0/255, 194.0/255, 222.0/255, 1), // #bac2de
-		CopyCutBgColor:        gdk.NewRGBA(49.0/255, 50.0/255, 68.0/255, 1),    // #313244
-		HoverBgColor:          gdk.NewRGBA(69.0/255, 71.0/255, 90.0/255, 0.1),
-		AccentColor:           gdk.NewRGBA(137.0/255, 180.0/255, 250.0/255, 1),
+		BackgroundColor:       gdk.NewRGBA(0, 0, 0, 0),        // Transparent, let CSS handle it
+		TextColor:             gdk.NewRGBA(1, 1, 1, 1),        // Default to white, will be overridden
+		SelectedBgColor:       gdk.NewRGBA(0.2, 0.4, 0.8, 0.2), // Default accent-like
+		SelectedTextColor:     gdk.NewRGBA(0.2, 0.4, 0.8, 1),   // Default accent
+		HeaderBackgroundColor: gdk.NewRGBA(0, 0, 0, 0.05),     // Subtle
+		HeaderTextColor:       gdk.NewRGBA(1, 1, 1, 0.6),      // Dimmed
+		CopyCutBgColor:        gdk.NewRGBA(0.5, 0.5, 0.5, 0.2),
+		HoverBgColor:          gdk.NewRGBA(1, 1, 1, 0.05),
+		AccentColor:           gdk.NewRGBA(0.2, 0.4, 0.8, 1),
 	}
 }

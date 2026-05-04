@@ -310,11 +310,29 @@ func (fl *FileList) SetSelectionChanged(f func(int)) {
 }
 
 func (fl *FileList) onDraw(da *gtk.DrawingArea, cr *cairo.Context, w, h int) {
-	// Try to get system accent color
+	// Try to get system colors from StyleContext
 	sc := da.StyleContext()
+	
+	if bg, ok := sc.LookupColor("view_bg_color"); ok {
+		fl.colorTheme.BackgroundColor = *bg
+	} else if bg, ok := sc.LookupColor("window_bg_color"); ok {
+		fl.colorTheme.BackgroundColor = *bg
+	}
+	
+	if fg, ok := sc.LookupColor("view_fg_color"); ok {
+		fl.colorTheme.TextColor = *fg
+	} else if fg, ok := sc.LookupColor("window_fg_color"); ok {
+		fl.colorTheme.TextColor = *fg
+	}
+
 	if accent, ok := sc.LookupColor("accent_bg_color"); ok {
 		fl.colorTheme.AccentColor = *accent
 		fl.colorTheme.SelectedBgColor = gdk.NewRGBA(accent.Red(), accent.Green(), accent.Blue(), 0.2)
+		fl.colorTheme.SelectedTextColor = *accent
+	}
+	
+	if headerBg, ok := sc.LookupColor("headerbar_bg_color"); ok {
+		fl.colorTheme.HeaderBackgroundColor = gdk.NewRGBA(headerBg.Red(), headerBg.Green(), headerBg.Blue(), 0.5)
 	}
 
 	// Pre-calculate height to fill background accurately

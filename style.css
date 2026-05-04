@@ -1,16 +1,13 @@
-/* Aurora Dark Aesthetic */
-
-/* Fallback colors for systems without Libadwaita accent colors */
-@define-color accent_bg_color #89b4fa;
-@define-color accent_fg_color #11111b;
+/* Adwaita Styling */
 
 window {
-    background-color: #1e1e2e;
-    color: #cdd6f4;
+    background-color: @window_bg_color;
+    color: @window_fg_color;
 }
 
 headerbar, .headerbar {
-    background-color: #181825;
+    background-color: @headerbar_bg_color;
+    color: @headerbar_fg_color;
     background-image: none;
     border-bottom: none;
     padding: 0;
@@ -18,29 +15,29 @@ headerbar, .headerbar {
 }
 
 .left-header {
-    background-color: #11111b; /* Matches sidebar */
+    background-color: @headerbar_bg_color;
     border-bottom: none;
 }
 
 .right-header {
-    background-color: #181825;
+    background-color: @headerbar_bg_color;
     border-bottom: none;
 }
 
 .header-separator {
-    background-color: #313244;
+    background-color: @borders;
     min-width: 1px;
 }
 
 .header-container {
-    background-color: #181825;
+    background-color: @headerbar_bg_color;
 }
 
-/* Global Button & MenuButton resets for transparency and dark theme */
+/* Global Button & MenuButton resets for transparency */
 button, 
 menubutton {
     background-color: transparent;
-    color: #cdd6f4;
+    color: inherit;
     border: none;
     box-shadow: none;
     background-image: none;
@@ -50,18 +47,18 @@ menubutton {
 
 button:hover,
 menubutton:hover {
-    background-color: rgba(255, 255, 255, 0.08);
+    background-color: alpha(currentColor, 0.08);
 }
 
 button:active,
 menubutton:active {
-    background-color: rgba(255, 255, 255, 0.15);
+    background-color: alpha(currentColor, 0.15);
 }
 
 button:backdrop,
 menubutton:backdrop {
     background-color: transparent;
-    color: #a6adc8;
+    color: alpha(currentColor, 0.6);
 }
 
 /* Rounded corners for everything */
@@ -88,7 +85,7 @@ popover > box,
 
 .path-bar button {
     padding: 4px 10px;
-    color: #bac2de;
+    color: alpha(currentColor, 0.8);
     border-radius: 8px;
 }
 
@@ -103,14 +100,14 @@ popover > box,
 }
 
 .path-separator {
-    color: #585b70;
+    color: alpha(currentColor, 0.4);
     margin: 0 4px;
 }
 
 .search-entry {
-    background-color: #313244;
-    color: #cdd6f4;
-    border: 1px solid #45475a;
+    background-color: @view_bg_color;
+    color: @view_fg_color;
+    border: 1px solid @borders;
     padding: 6px 12px;
 }
 
@@ -120,40 +117,40 @@ popover > box,
 
 /* Network Viewer Styling */
 .network-viewer {
-    background-color: #1e1e2e;
+    background-color: @window_bg_color;
 }
 
 .network-card {
-    background-color: #11111b;
+    background-color: @card_bg_color;
+    color: @card_fg_color;
     border-radius: 12px;
     padding: 16px;
-    border: 1px solid #313244;
+    border: 1px solid @borders;
     transition: all 200ms ease-in-out;
 }
 
 .network-card:hover {
-    background-color: rgba(137, 180, 250, 0.1);
-    border-color: #89b4fa;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    background-color: alpha(@accent_bg_color, 0.1);
+    border-color: @accent_bg_color;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .network-card-title {
     font-weight: bold;
     font-size: 1.1em;
-    color: #cdd6f4;
 }
 
 .network-card-subtitle {
     font-size: 0.9em;
-    color: #a6adc8;
+    color: alpha(currentColor, 0.7);
 }
 
 .network-form-card {
-    background-color: #181825;
+    background-color: @card_bg_color;
     border-radius: 16px;
     padding: 24px;
-    border: 1px solid #313244;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    border: 1px solid @borders;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 .network-connect-button {
@@ -167,7 +164,7 @@ popover > box,
     font-weight: 800;
     font-size: 1.4em;
     margin-bottom: 16px;
-    color: #89b4fa;
+    color: @accent_bg_color;
 }
 
 .network-remove-button {
@@ -175,24 +172,24 @@ popover > box,
     padding: 4px;
     min-width: 32px;
     min-height: 32px;
-    color: #f38ba8;
+    color: @error_color;
 }
 
 .network-remove-button:hover {
-    background-color: #f38ba8;
-    color: #11111b;
+    background-color: @error_color;
+    color: @error_fg_color;
 }
 
 /* Sidebar styling */
 .sidebar {
-    background-color: #11111b;
+    background-color: @window_bg_color;
     padding: 4px;
 }
 
 .sidebar-header {
     font-size: 0.8em;
     font-weight: bold;
-    color: #585b70;
+    color: alpha(currentColor, 0.5);
     margin-top: 12px;
     margin-bottom: 4px;
     margin-left: 12px;
@@ -205,19 +202,19 @@ popover > box,
 
 .sidebar-eject-button {
     padding: 4px 8px;
-    color: #585b70;
+    color: alpha(currentColor, 0.5);
     opacity: 0.6;
 }
 
 .sidebar-eject-button:hover {
-    color: #f38ba8;
+    color: @error_color;
     opacity: 1.0;
 }
 
 .sidebar-button {
     padding: 4px 8px;
     margin-bottom: 1px;
-    color: #bac2de;
+    color: inherit;
     min-height: 30px;
 }
 
@@ -228,39 +225,39 @@ popover > box,
 
 /* Paned handles */
 paned > separator {
-    background-color: #313244;
+    background-color: @borders;
     min-width: 1px;
     min-height: 1px;
 }
 
 /* Scrolled window */
 scrolledwindow {
-    background-color: #1e1e2e;
+    background-color: @window_bg_color;
 }
 
 /* Custom drawing areas usually don't use CSS for their internal content, 
    but we can style the container */
 .file-list-container {
-    background-color: #1e1e2e;
+    background-color: @view_bg_color;
 }
 
 .preview-panel {
-    background-color: #181825;
+    background-color: @window_bg_color;
     padding: 8px;
 }
 
 .dir-previewer-header {
-    background-color: #11111b;
+    background-color: @card_bg_color;
     border-radius: 8px;
     padding: 6px 10px;
     margin-bottom: 2px;
-    border: 1px solid #313244;
+    border: 1px solid @borders;
 }
 
 .dir-previewer-title {
     font-size: 1.1em;
     font-weight: bold;
-    color: #cdd6f4;
+    color: @window_fg_color;
 }
 
 .preview-grid-item {
@@ -270,28 +267,28 @@ scrolledwindow {
 
 .preview-grid-item label {
     font-size: 0.9em;
-    color: #bac2de;
+    color: alpha(currentColor, 0.8);
 }
 
 .viewer-panel {
-    background-color: #1e1e2e;
+    background-color: @window_bg_color;
     padding: 0px;
 }
 
 scrollbar slider {
-    background-color: #45475a;
+    background-color: alpha(currentColor, 0.2);
     border-radius: 4px;
 }
 
 scrollbar slider:hover {
-    background-color: #585b70;
+    background-color: alpha(currentColor, 0.3);
 }
 
 popover > contents,
 popover > box {
-    background-color: #1e1e2e;
-    color: #cdd6f4;
-    border: 1px solid #313244;
+    background-color: @popover_bg_color;
+    color: @popover_fg_color;
+    border: 1px solid @borders;
     padding: 8px;
 }
 
@@ -302,9 +299,9 @@ button.flat {
 }
 
 .preview-info-box {
-    background-color: #11111b; /* Darker than panel bg to create a card effect */
+    background-color: @card_bg_color;
     border-radius: 12px;
-    border: 1px solid #313244;
+    border: 1px solid @borders;
     padding: 16px;
     margin-top: 8px;
 }
@@ -312,13 +309,13 @@ button.flat {
 .preview-title {
     font-size: 1.4em;
     font-weight: bold;
-    color: #cdd6f4;
+    color: inherit;
     margin-bottom: 8px;
 }
 
 .preview-label-title {
     font-size: 0.95em;
-    color: #a6adc8;
+    color: alpha(currentColor, 0.7);
 }
 
 .preview-label-value {
@@ -331,34 +328,33 @@ button.flat {
 .title-4 {
     font-size: 1.2em;
     font-weight: bold;
-    color: #cdd6f4;
 }
 
 .caption {
     font-size: 0.85em;
-    color: #a6adc8;
+    color: alpha(currentColor, 0.6);
     margin-bottom: 2px;
 }
 
 .view {
-    background-color: #11111b;
-    color: #cdd6f4;
+    background-color: @view_bg_color;
+    color: @view_fg_color;
     border-radius: 8px;
-    border: 1px solid #313244;
+    border: 1px solid @borders;
 }
 
 .view label {
-    color: #cdd6f4;
+    color: inherit;
 }
 
 entry.error {
-    border-color: #f38ba8;
-    color: #f38ba8;
+    border-color: @error_color;
+    color: @error_color;
 }
 
 entry.error:focus {
-    border-color: #f38ba8;
-    outline-color: rgba(243, 139, 168, 0.3);
+    border-color: @error_color;
+    outline-color: alpha(@error_color, 0.3);
 }
 
 button.suggested-action {
@@ -372,14 +368,14 @@ button.suggested-action:hover {
 }
 
 button.suggested-action:disabled {
-    background-color: #313244;
-    color: #585b70;
+    background-color: alpha(currentColor, 0.1);
+    color: alpha(currentColor, 0.4);
 }
 
 entry {
-    background-color: #313244;
-    color: #cdd6f4;
-    border: 1px solid #45475a;
+    background-color: @view_bg_color;
+    color: @view_fg_color;
+    border: 1px solid @borders;
     padding: 8px 12px;
     transition: all 0.2s;
 }
@@ -390,39 +386,39 @@ entry:focus {
 
 /* Network Viewer Styling */
 .network-viewer {
-    background-color: #1e1e2e;
+    background-color: @window_bg_color;
 }
 
 .network-card {
-    background-color: #11111b;
+    background-color: @card_bg_color;
     border-radius: 12px;
     padding: 16px;
-    border: 1px solid #313244;
+    border: 1px solid @borders;
     transition: all 200ms ease-in-out;
 }
 
 .network-card:hover {
-    background-color: rgba(137, 180, 250, 0.1);
-    border-color: #89b4fa;
+    background-color: alpha(@accent_bg_color, 0.1);
+    border-color: @accent_bg_color;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .network-card-title {
     font-weight: bold;
     font-size: 1.1em;
-    color: #cdd6f4;
+    color: @window_fg_color;
 }
 
 .network-card-subtitle {
     font-size: 0.9em;
-    color: #a6adc8;
+    color: alpha(@window_fg_color, 0.7);
 }
 
 .network-form-card {
-    background-color: #181825;
+    background-color: @headerbar_bg_color;
     border-radius: 16px;
     padding: 24px;
-    border: 1px solid #313244;
+    border: 1px solid @borders;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
@@ -437,7 +433,7 @@ entry:focus {
     font-weight: 800;
     font-size: 1.4em;
     margin-bottom: 16px;
-    color: #89b4fa;
+    color: @accent_bg_color;
 }
 
 .network-remove-button {
@@ -445,10 +441,10 @@ entry:focus {
     padding: 4px;
     min-width: 32px;
     min-height: 32px;
-    color: #f38ba8;
+    color: @error_color;
 }
 
 .network-remove-button:hover {
-    background-color: #f38ba8;
-    color: #11111b;
+    background-color: @error_color;
+    color: @error_fg_color;
 }
