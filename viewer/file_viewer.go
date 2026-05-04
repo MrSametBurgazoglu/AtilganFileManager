@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"strings"
@@ -244,7 +244,7 @@ func (viewer *FileViewer) Refresh(newFilter bool) {
 	}
 
 	for _, entry := range filteredEntries {
-		fullPath := path.Join(viewer.Path, entry.Name())
+		fullPath := filepath.Join(viewer.Path, entry.Name())
 		var group string
 		if viewer.SortOrder == types.SortByTime {
 			info, err := entry.Info()

@@ -123,6 +123,26 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 	contentPage := adw.NewNavigationPage(contentToolbar, "Content")
 	splitView.SetContent(contentPage)
 
+	headerBar.PackStart(mainBox.Pathbar)
+
+	mainBox.Workspace.SetHExpand(true)
+	mainBox.Workspace.SetVExpand(true)
+	mainBox.Workspace.SetSizeRequest(300, -1)
+	contentPaned.SetStartChild(mainBox.Workspace)
+	contentPaned.SetResizeStartChild(true)
+	contentPaned.SetShrinkStartChild(false)
+	contentPaned.SetResizeEndChild(true)
+	contentPaned.SetShrinkEndChild(false)
+
+	rightBox := gtk.NewBox(gtk.OrientationVertical, 0)
+	rightBox.SetHExpand(false)
+	rightBox.SetVExpand(true)
+	rightBox.SetSizeRequest(215, -1)
+	contentPaned.SetEndChild(rightBox)
+
+	mainBox.PreviewerPanel = previewer_panel.NewPreviewPanel(curdir, mainBox.pathChanged, mainBox.SpecialPaths)
+	rightBox.Append(mainBox.PreviewerPanel)
+
 	mainBox.Workspace.NewTab(curdir)
 
 	mainBox.Workspace.TabView.Connect("notify::selected-page", func() {
@@ -144,26 +164,6 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 	mainBox.SideBar.OnNewTab = func() {
 		mainBox.Workspace.NewTab(mainBox.Path)
 	}
-
-	headerBar.PackStart(mainBox.Pathbar)
-
-	mainBox.Workspace.SetHExpand(true)
-	mainBox.Workspace.SetVExpand(true)
-	mainBox.Workspace.SetSizeRequest(300, -1)
-	contentPaned.SetStartChild(mainBox.Workspace)
-	contentPaned.SetResizeStartChild(true)
-	contentPaned.SetShrinkStartChild(false)
-	contentPaned.SetResizeEndChild(true)
-	contentPaned.SetShrinkEndChild(false)
-
-	rightBox := gtk.NewBox(gtk.OrientationVertical, 0)
-	rightBox.SetHExpand(false)
-	rightBox.SetVExpand(true)
-	rightBox.SetSizeRequest(215, -1)
-	contentPaned.SetEndChild(rightBox)
-
-	mainBox.PreviewerPanel = previewer_panel.NewPreviewPanel(curdir, mainBox.pathChanged, mainBox.SpecialPaths)
-	rightBox.Append(mainBox.PreviewerPanel)
 
 	copyCutPreviewer := previewer.NewCopyCutPreviewer()
 	copyCutPreviewer.SetVisible(false)
@@ -362,7 +362,14 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 	return mainBox
 }
 func (m *MainBox) getActivePanel() *viewer_panel.Panel {
-	return m.Workspace.GetActivePanel()
+	panel := m.Workspace.GetActivePanel()
+	if panel == nil && len(m.Workspace.PagePanels) > 0 {
+		// Fallback to the first available panel if selection is transiently nil
+		for _, p := range m.Workspace.PagePanels {
+			return p
+		}
+	}
+	return panel
 }
 
 func (m *MainBox) setupPanel(panel *viewer_panel.Panel) {
@@ -491,22 +498,28 @@ func (m *MainBox) pathChanged(path string) {
 }
 
 func (m *MainBox) updatePreviewer() {
+	if m.PreviewerPanel == nil {
+		return
+	}
 	activePanel := m.getActivePanel()
 	if activePanel == nil {
-		m.PreviewerPanel.Update("")
+		// If no active panel, we can't show a preview.
+		// We don't necessarily want to clear it if it's just a transient state during initialization.
 		return
 	}
 
 	list := activePanel.FileViewer.FileViewerList
-	if len(list.Items) == 0 {
+	if list == nil || len(list.Items) == 0 {
 		m.PreviewerPanel.Update("")
 		return
 	}
 
 	selectedPaths := []string{}
-	for i := 0; i < len(list.Items); i++ {
-		if list.SelectedIdxs[i] {
-			selectedPaths = append(selectedPaths, list.Items[i].Path)
+	if list.SelectedIdxs != nil {
+		for i := 0; i < len(list.Items); i++ {
+			if list.SelectedIdxs[i] {
+				selectedPaths = append(selectedPaths, list.Items[i].Path)
+			}
 		}
 	}
 
@@ -514,9 +527,11 @@ func (m *MainBox) updatePreviewer() {
 		m.PreviewerPanel.UpdateMultiple(selectedPaths)
 	} else if len(selectedPaths) == 1 {
 		m.PreviewerPanel.Update(selectedPaths[0])
-	} else {
+	} else if list.SelectedIDX >= 0 && list.SelectedIDX < len(list.Items) {
 		selected := list.Items[list.SelectedIDX]
 		m.PreviewerPanel.Update(selected.Path)
+	} else {
+		m.PreviewerPanel.Update("")
 	}
 }
 
