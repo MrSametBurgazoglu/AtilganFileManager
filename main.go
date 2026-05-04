@@ -46,6 +46,7 @@ type MainBox struct {
 	Config         *preferences.Config
 	ContentPaned   *gtk.Paned
 	RightBox       *gtk.Box
+	BottomBar      *gtk.Box
 }
 
 func (m *MainBox) applyPreferences() {
@@ -80,6 +81,7 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 		MainWindow:          mainWindow,
 		HeaderBar:           headerBar,
 		Config:              preferences.LoadConfig(),
+		BottomBar:           gtk.NewBox(gtk.OrientationHorizontal, 6),
 	}
 
 	splitView.SetMaxSidebarWidth(float64(mainBox.Config.SidebarWidth))
@@ -120,10 +122,15 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 	mainBox.Search.SetVisible(false)
 	mainBox.Search.PathChanged = mainBox.pathChanged
 
-	mainBox.SideBar = sidebar.NewSidebar(mainBox.pathChanged)
+	mainBox.SideBar = sidebar.NewSidebar(mainBox.pathChanged, mainBox.Config)
 	mainBox.SideBar.SetOrientation(gtk.OrientationVertical)
 	mainBox.SideBar.SetHExpand(true)
 	mainBox.SideBar.SetHAlign(gtk.AlignFill)
+	mainBox.SideBar.OnToggleHidden = func(active bool) {
+		mainBox.Config.ShowHidden = active
+		mainBox.Config.Save()
+		mainBox.applyPreferences()
+	}
 
 	sidebarToolbar := adw.NewToolbarView()
 	sidebarToolbar.AddTopBar(headerBar.LeftHeader)
@@ -156,12 +163,51 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 	contentPage := adw.NewNavigationPage(contentToolbar, "Content")
 	splitView.SetContent(contentPage)
 
-	headerBar.PackStart(mainBox.Pathbar)
+headerBar.PackStart(mainBox.Pathbar)
 
-	mainBox.Workspace.SetHExpand(true)
-	mainBox.Workspace.SetVExpand(true)
-	mainBox.Workspace.SetSizeRequest(300, -1)
-	contentPaned.SetStartChild(mainBox.Workspace)
+previewToggle := gtk.NewToggleButton()
+	previewToggle.SetIconName("view-sidebar-end-panel-symbolic")
+	previewToggle.SetTooltipText("Toggle Preview")
+	previewToggle.AddCSSClass("flat")
+	previewToggle.SetActive(mainBox.Config.EnablePreviewPane)
+	previewToggle.ConnectToggled(func() {
+		mainBox.Config.EnablePreviewPane = previewToggle.Active()
+		mainBox.Config.Save()
+		mainBox.applyPreferences()
+	})
+
+	hiddenToggle := gtk.NewToggleButton()
+	hiddenToggle.SetIconName("emblem-hidden-symbolic")
+	hiddenToggle.SetTooltipText("Toggle Hidden Files")
+	hiddenToggle.AddCSSClass("flat")
+	hiddenToggle.SetActive(mainBox.Config.ShowHidden)
+	hiddenToggle.ConnectToggled(func() {
+		mainBox.Config.ShowHidden = hiddenToggle.Active()
+		mainBox.Config.Save()
+		mainBox.applyPreferences()
+		mainBox.pathChanged(mainBox.Path)
+	})
+	hiddenToggle.ConnectToggled(func() {
+		mainBox.Config.ShowHidden = hiddenToggle.Active()
+		mainBox.Config.Save()
+		mainBox.applyPreferences()
+		mainBox.pathChanged(mainBox.Path)
+	})
+
+	spacer := gtk.NewBox(gtk.OrientationHorizontal, 0)
+	spacer.SetHExpand(true)
+	mainBox.BottomBar.Append(spacer)
+	mainBox.BottomBar.Append(previewToggle)
+	mainBox.BottomBar.Append(hiddenToggle)
+
+	workspaceWrapper := gtk.NewBox(gtk.OrientationVertical, 0)
+	workspaceWrapper.SetHExpand(true)
+	workspaceWrapper.SetVExpand(true)
+	workspaceWrapper.SetSizeRequest(300, -1)
+	workspaceWrapper.Append(mainBox.Workspace)
+	workspaceWrapper.Append(mainBox.BottomBar)
+
+	contentPaned.SetStartChild(workspaceWrapper)
 	contentPaned.SetResizeStartChild(true)
 	contentPaned.SetShrinkStartChild(false)
 	contentPaned.SetResizeEndChild(true)
@@ -215,20 +261,7 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 	}
 	rightBox.Append(copyCutPreviewer)
 
-	togglePreviewer := func() {
-		isVisible := !mainBox.PreviewerPanel.Visible()
-		mainBox.PreviewerPanel.SetVisible(isVisible)
-		rightBox.SetVisible(isVisible)
-		w, h := mainWindow.Width(), mainWindow.Height()
-		if isVisible {
-			contentPaned.SetPosition(950)
-			mainWindow.SetDefaultSize(w+215, h)
-		} else {
-			mainWindow.SetDefaultSize(w-215, h)
-		}
-	}
-
-	mainBox.setupActionsMenu(mainWindow, headerBar, togglePreviewer)
+	mainBox.setupActionsMenu(mainWindow, headerBar)
 
 	controller := gtk.NewShortcutController()
 
@@ -615,7 +648,7 @@ func (m *MainBox) updatePreviewer() {
 	}
 }
 
-func (m *MainBox) setupActionsMenu(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar, togglePreviewer func()) {
+func (m *MainBox) setupActionsMenu(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) {
 	actionsPopover := gtk.NewPopover()
 	headerBar.ActionsButton.SetPopover(actionsPopover)
 
@@ -675,12 +708,20 @@ func (m *MainBox) setupActionsMenu(mainWindow *adw.ApplicationWindow, headerBar 
 			activePanel.FileViewer.OpenTerminal()
 		}
 	}))
-	actionsBox.Append(createActionBtn("view-reveal-symbolic", "Toggle Previewer", togglePreviewer))
+
+	actionsBox.Append(createActionBtn("tab-new-symbolic", "New Tab", func() {
+		m.Workspace.NewTab(m.Path)
+	}))
 
 	actionsBox.Append(gtk.NewSeparator(gtk.OrientationHorizontal))
 
 	actionsBox.Append(createActionBtn("preferences-desktop-keyboard-shortcuts-symbolic", "Shortcuts", func() {
 		shortcut_popup.NewShortcutPopup(&mainWindow.Window)
+	}))
+	actionsBox.Append(createActionBtn("preferences-system-symbolic", "Preferences", func() {
+		dialog := preferences.NewPreferencesDialog(&mainWindow.Window, m.Config)
+		dialog.OnChanged = m.applyPreferences
+		dialog.Show()
 	}))
 	actionsBox.Append(createActionBtn("help-about-symbolic", "About", func() {
 		aboutDialog := adw.NewAboutWindow()

@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/MrSametBurgazoglu/atilgan/devices"
+	"github.com/MrSametBurgazoglu/atilgan/preferences"
 	"github.com/adrg/xdg"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
@@ -20,18 +21,17 @@ type Sidebar struct {
 	pathChanged  func(string)
 	OnNewTab     func()
 	OnPreferences func()
+	OnToggleHidden func(bool)
 }
 
-func NewSidebar(pathChanged func(string)) *Sidebar {
-	box := gtk.NewBox(gtk.OrientationVertical, 8)
-	box.SetHExpand(false)
-	box.SetVExpand(true)
+func NewSidebar(pathChanged func(string), config *preferences.Config) *Sidebar {
+	box := gtk.NewBox(gtk.OrientationVertical, 2)
 	box.AddCSSClass("sidebar")
 
 	sidebar := &Sidebar{
 		Box:          box,
-		locationsBox: gtk.NewBox(gtk.OrientationVertical, 8),
-		pinsBox:      gtk.NewBox(gtk.OrientationVertical, 8),
+		locationsBox: gtk.NewBox(gtk.OrientationVertical, 2),
+		pinsBox:      gtk.NewBox(gtk.OrientationVertical, 2),
 		devicesBox:   devices.NewDeviceManager(pathChanged),
 		buttons:      make(map[string]*gtk.Button),
 		pathChanged:  pathChanged,
@@ -39,21 +39,7 @@ func NewSidebar(pathChanged func(string)) *Sidebar {
 
 	box.Append(sidebar.locationsBox)
 
-	newTabBtn := sidebar.createButton("tab-new-symbolic", "New Tab", "")
-	newTabBtn.ConnectClicked(func() {
-		if sidebar.OnNewTab != nil {
-			sidebar.OnNewTab()
-		}
-	})
-	sidebar.locationsBox.Append(newTabBtn)
-
-	prefBtn := sidebar.createButton("emblem-system-symbolic", "Preferences", "")
-	prefBtn.ConnectClicked(func() {
-		if sidebar.OnPreferences != nil {
-			sidebar.OnPreferences()
-		}
-	})
-	sidebar.locationsBox.Append(prefBtn)
+	box.Append(gtk.NewSeparator(gtk.OrientationHorizontal))
 
 	pinsLabel := gtk.NewLabel("Bookmarks")
 	pinsLabel.AddCSSClass("caption")
@@ -84,9 +70,9 @@ func NewSidebar(pathChanged func(string)) *Sidebar {
 	sidebar.addLocationButton("folder-documents-symbolic", "Documents", documents)
 	sidebar.addLocationButton("folder-pictures-symbolic", "Pictures", pictures)
 	sidebar.addLocationButton("folder-music-symbolic", "Music", music)
-	sidebar.addLocationButton("user-videos-symbolic", "Videos", videos)
+	sidebar.addLocationButton("folder-videos-symbolic", "Videos", videos)
 	sidebar.addLocationButton("network-server-symbolic", "Network", "network://")
-	sidebar.addLocationButton("tag-symbolic", "Tags", "tags://")
+	sidebar.addLocationButton("bookmark-symbolic", "Tags", "tags://")
 
 	return sidebar
 }
@@ -125,9 +111,11 @@ func (s *Sidebar) createButton(iconName, labelText, path string) *gtk.Button {
 	btn.AddCSSClass("sidebar-button")
 	btn.SetHAlign(gtk.AlignFill)
 
-	btn.ConnectClicked(func() {
-		s.pathChanged(path)
-	})
+	if path != "" {
+		btn.ConnectClicked(func() {
+			s.pathChanged(path)
+		})
+	}
 
 	return btn
 }

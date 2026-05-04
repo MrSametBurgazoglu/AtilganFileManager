@@ -33,24 +33,6 @@ func NewPreferencesDialog(parent *gtk.Window, config *Config) *PreferencesDialog
 	viewGroup.SetTitle("View")
 	generalPage.Add(viewGroup)
 
-	viewModeRow := adw.NewComboRow()
-	viewModeRow.SetTitle("Default View Mode")
-	viewModeRow.SetModel(gtk.NewStringList([]string{"Grid", "List"}))
-	if config.DefaultViewMode == "list" {
-		viewModeRow.SetSelected(1)
-	} else {
-		viewModeRow.SetSelected(0)
-	}
-	viewModeRow.Connect("notify::selected", func() {
-		if viewModeRow.Selected() == 1 {
-			config.DefaultViewMode = "list"
-		} else {
-			config.DefaultViewMode = "grid"
-		}
-		pd.notifyChanged()
-	})
-	viewGroup.Add(viewModeRow)
-
 	sortOrderRow := adw.NewComboRow()
 	sortOrderRow.SetTitle("Default Sort Order")
 	sortOrderRow.SetModel(gtk.NewStringList([]string{"Name", "Size", "Time", "Type"}))

@@ -23,6 +23,7 @@ type DirPreviewer struct {
 	folderIcon         *gtk.Image
 	folderName         *gtk.Label
 	specialPathManager *special_path.SpecialPathManager
+	config           *preferences.Config
 }
 
 func NewDirPreviewer(path string, changePath func(string), specialPathManager *special_path.SpecialPathManager, parent *gtk.Window, config *preferences.Config) *DirPreviewer {
@@ -32,6 +33,7 @@ func NewDirPreviewer(path string, changePath func(string), specialPathManager *s
 		changePath:         changePath,
 		FileViewerList:     file_list.NewFileList(false, specialPathManager, parent, config),
 		specialPathManager: specialPathManager,
+		config:            config,
 	}
 	viewer.folderIcon = gtk.NewImageFromIconName("folder-symbolic")
 	viewer.folderIcon.SetPixelSize(20)
@@ -99,8 +101,13 @@ func (viewer *DirPreviewer) Refresh() {
 		})
 
 		for _, entry := range entries {
-			fullPath := filepath.Join(viewer.Path, entry.Name())
 			name := entry.Name()
+
+			if !viewer.config.ShowHidden && strings.HasPrefix(name, ".") {
+				continue
+			}
+
+			fullPath := filepath.Join(viewer.Path, name)
 			group := ""
 			if len(name) > 0 {
 				runes := []rune(strings.ToUpper(name))
