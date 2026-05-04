@@ -1,6 +1,7 @@
 package viewer_panel
 
 import (
+	"github.com/MrSametBurgazoglu/atilgan/fileops"
 	"github.com/MrSametBurgazoglu/atilgan/network"
 	"github.com/MrSametBurgazoglu/atilgan/special_path"
 	"github.com/MrSametBurgazoglu/atilgan/viewer"
@@ -11,15 +12,21 @@ type Panel struct {
 	*gtk.Box
 	Path          string
 	FileViewer    *viewer.FileViewer
+	VideoViewer   *viewer.VideoViewer
+	PictureViewer *viewer.PictureViewer
+	MusicViewer   *viewer.MusicViewer
 	NetworkViewer *network.NetworkViewer
 	Stack         *gtk.Stack
 }
 
 func NewPanel(mainWindow *gtk.Window, path string, pathChanged func(string), specialPathManager *special_path.SpecialPathManager) *Panel {
 	panel := &Panel{
-		Box:        gtk.NewBox(gtk.OrientationHorizontal, 0),
-		Path:       path,
-		FileViewer: viewer.NewFileViewer(mainWindow, path, pathChanged, specialPathManager),
+		Box:           gtk.NewBox(gtk.OrientationHorizontal, 0),
+		Path:          path,
+		FileViewer:    viewer.NewFileViewer(mainWindow, path, pathChanged, specialPathManager),
+		VideoViewer:   viewer.NewVideoViewer(mainWindow, path, pathChanged, specialPathManager),
+		PictureViewer: viewer.NewPictureViewer(mainWindow, path, pathChanged, specialPathManager),
+		MusicViewer:   viewer.NewMusicViewer(mainWindow, path, pathChanged, specialPathManager),
 	}
 
 	networkManager := specialPathManager.Paths["network"].(*network.Network)
@@ -28,12 +35,15 @@ func NewPanel(mainWindow *gtk.Window, path string, pathChanged func(string), spe
 	panel.Stack = gtk.NewStack()
 	panel.Stack.SetTransitionType(gtk.StackTransitionTypeCrossfade)
 	panel.Stack.AddNamed(panel.FileViewer, "file")
+	panel.Stack.AddNamed(panel.VideoViewer, "video_viewer")
+	panel.Stack.AddNamed(panel.PictureViewer, "picture_viewer")
+	panel.Stack.AddNamed(panel.MusicViewer, "music_viewer")
 	panel.Stack.AddNamed(panel.NetworkViewer, "network")
 
 	panel.Box.AddCSSClass("viewer-panel")
 	panel.SetHExpand(true)
 	panel.Append(panel.Stack)
-	
+
 	panel.Stack.SetVisibleChildName("file")
 
 	return panel
@@ -44,6 +54,15 @@ func (p *Panel) SetPath(path string) {
 	if path == "network://" {
 		p.NetworkViewer.Refresh()
 		p.Stack.SetVisibleChildName("network")
+	} else if path == fileops.GetVideosPath() {
+		p.VideoViewer.SetPath(path)
+		p.Stack.SetVisibleChildName("video_viewer")
+	} else if path == fileops.GetPicturesPath() {
+		p.PictureViewer.SetPath(path)
+		p.Stack.SetVisibleChildName("picture_viewer")
+	} else if path == fileops.GetMusicPath() {
+		p.MusicViewer.SetPath(path)
+		p.Stack.SetVisibleChildName("music_viewer")
 	} else {
 		p.FileViewer.SetPath(path)
 		p.Stack.SetVisibleChildName("file")

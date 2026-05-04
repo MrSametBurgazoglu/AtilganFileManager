@@ -7,6 +7,7 @@ import (
 
 	"github.com/MrSametBurgazoglu/atilgan/clipboard"
 	"github.com/MrSametBurgazoglu/atilgan/create_popup"
+	"github.com/MrSametBurgazoglu/atilgan/fileops"
 	"github.com/MrSametBurgazoglu/atilgan/header"
 	"github.com/MrSametBurgazoglu/atilgan/pathbar"
 	"github.com/MrSametBurgazoglu/atilgan/previewer"
@@ -376,8 +377,22 @@ func (m *MainBox) setupPanel(panel *viewer_panel.Panel) {
 	panel.FileViewer.FileViewerList.SelectionChanged = func(index int) {
 		m.updatePreviewer()
 	}
-
 	panel.FileViewer.FileViewerList.PathChanged = m.pathChanged
+
+	panel.VideoViewer.FileViewerList.SelectionChanged = func(index int) {
+		m.updatePreviewer()
+	}
+	panel.VideoViewer.FileViewerList.PathChanged = m.pathChanged
+
+	panel.PictureViewer.FileViewerList.SelectionChanged = func(index int) {
+		m.updatePreviewer()
+	}
+	panel.PictureViewer.FileViewerList.PathChanged = m.pathChanged
+
+	panel.MusicViewer.FileViewerList.SelectionChanged = func(index int) {
+		m.updatePreviewer()
+	}
+	panel.MusicViewer.FileViewerList.PathChanged = m.pathChanged
 
 	panel.FileViewer.FileViewerList.KeyLeftPressed = func() {
 		specialPath := m.SpecialPaths.GetPath(panel.FileViewer.Path)
@@ -508,17 +523,40 @@ func (m *MainBox) updatePreviewer() {
 		return
 	}
 
-	list := activePanel.FileViewer.FileViewerList
-	if list == nil || len(list.Items) == 0 {
+	path := activePanel.Path
+	
+	var items []*types.ListItem
+	var selectedIdxs map[int]bool
+	var selectedIdx int
+
+	if path == fileops.GetVideosPath() && activePanel.VideoViewer != nil && activePanel.VideoViewer.FileViewerList != nil {
+		items = activePanel.VideoViewer.FileViewerList.Items
+		selectedIdxs = activePanel.VideoViewer.FileViewerList.SelectedIdxs
+		selectedIdx = activePanel.VideoViewer.FileViewerList.SelectedIDX
+	} else if path == fileops.GetPicturesPath() && activePanel.PictureViewer != nil && activePanel.PictureViewer.FileViewerList != nil {
+		items = activePanel.PictureViewer.FileViewerList.Items
+		selectedIdxs = activePanel.PictureViewer.FileViewerList.SelectedIdxs
+		selectedIdx = activePanel.PictureViewer.FileViewerList.SelectedIDX
+	} else if path == fileops.GetMusicPath() && activePanel.MusicViewer != nil && activePanel.MusicViewer.FileViewerList != nil {
+		items = activePanel.MusicViewer.FileViewerList.Items
+		selectedIdxs = nil
+		selectedIdx = activePanel.MusicViewer.FileViewerList.SelectedIDX
+	} else if activePanel.FileViewer != nil && activePanel.FileViewer.FileViewerList != nil {
+		items = activePanel.FileViewer.FileViewerList.Items
+		selectedIdxs = activePanel.FileViewer.FileViewerList.SelectedIdxs
+		selectedIdx = activePanel.FileViewer.FileViewerList.SelectedIDX
+	}
+
+	if items == nil || len(items) == 0 {
 		m.PreviewerPanel.Update("")
 		return
 	}
 
 	selectedPaths := []string{}
-	if list.SelectedIdxs != nil {
-		for i := 0; i < len(list.Items); i++ {
-			if list.SelectedIdxs[i] {
-				selectedPaths = append(selectedPaths, list.Items[i].Path)
+	if selectedIdxs != nil {
+		for i := 0; i < len(items); i++ {
+			if selectedIdxs[i] {
+				selectedPaths = append(selectedPaths, items[i].Path)
 			}
 		}
 	}
@@ -527,8 +565,8 @@ func (m *MainBox) updatePreviewer() {
 		m.PreviewerPanel.UpdateMultiple(selectedPaths)
 	} else if len(selectedPaths) == 1 {
 		m.PreviewerPanel.Update(selectedPaths[0])
-	} else if list.SelectedIDX >= 0 && list.SelectedIDX < len(list.Items) {
-		selected := list.Items[list.SelectedIDX]
+	} else if selectedIdx >= 0 && selectedIdx < len(items) {
+		selected := items[selectedIdx]
 		m.PreviewerPanel.Update(selected.Path)
 	} else {
 		m.PreviewerPanel.Update("")

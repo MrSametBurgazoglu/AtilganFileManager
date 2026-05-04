@@ -141,9 +141,38 @@ func IsText(fileName string) bool {
 		strings.HasSuffix(fileName, ".sum")
 }
 
-func IsMedia(fileName string) bool {
+func IsVideo(fileName string) bool {
 	fileName = strings.ToLower(fileName)
-	return strings.HasSuffix(fileName, ".mp3") || strings.HasSuffix(fileName, ".mp4")
+	return strings.HasSuffix(fileName, ".mp4") ||
+		strings.HasSuffix(fileName, ".mkv") ||
+		strings.HasSuffix(fileName, ".mov") ||
+		strings.HasSuffix(fileName, ".avi") ||
+		strings.HasSuffix(fileName, ".webm")
+}
+
+func IsMusic(fileName string) bool {
+	fileName = strings.ToLower(fileName)
+	return strings.HasSuffix(fileName, ".mp3") ||
+		strings.HasSuffix(fileName, ".ogg") ||
+		strings.HasSuffix(fileName, ".wav") ||
+		strings.HasSuffix(fileName, ".flac") ||
+		strings.HasSuffix(fileName, ".m4a")
+}
+
+func IsMedia(fileName string) bool {
+	return IsVideo(fileName) || IsMusic(fileName)
+}
+
+func GetVideosPath() string {
+	return videos
+}
+
+func GetPicturesPath() string {
+	return pictures
+}
+
+func GetMusicPath() string {
+	return music
 }
 
 func IsDocument(fileName string) bool {

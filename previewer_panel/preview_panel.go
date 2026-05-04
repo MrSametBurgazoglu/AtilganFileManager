@@ -2,6 +2,7 @@ package previewer_panel
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/MrSametBurgazoglu/atilgan/fileops"
@@ -22,6 +23,9 @@ type PreviewPanel struct {
 	documentPreviewer       *previewer.DocumentPreviewer
 	trashPreviewer          *previewer.TrashPreviewer
 	multiSelectionPreviewer *previewer.MultiSelectionPreviewer
+	videoDetails            *previewer.VideoDetailsPreviewer
+	musicDetails            *previewer.MusicDetailsPreviewer
+	pictureDetails          *previewer.PictureDetailsPreviewer
 	filePath                string
 	specialPathManager      *special_path.SpecialPathManager
 }
@@ -39,6 +43,9 @@ func NewPreviewPanel(path string, changePath func(string), specialPathManager *s
 		documentPreviewer:       previewer.NewDocumentPreviewer(),
 		trashPreviewer:          previewer.NewTrashPreviewer(func() { changePath("trash://") }),
 		multiSelectionPreviewer: previewer.NewMultiSelectionPreviewer(),
+		videoDetails:            previewer.NewVideoDetailsPreviewer(),
+		musicDetails:            previewer.NewMusicDetailsPreviewer(),
+		pictureDetails:          previewer.NewPictureDetailsPreviewer(),
 		specialPathManager:      specialPathManager,
 	}
 	pp.AddCSSClass("preview-panel")
@@ -59,6 +66,9 @@ func NewPreviewPanel(path string, changePath func(string), specialPathManager *s
 	pp.AddTitled(pp.documentPreviewer, "documentpreviewer", "Document Previewer")
 	pp.AddTitled(pp.trashPreviewer, "trashpreviewer", "Trash Previewer")
 	pp.AddTitled(pp.multiSelectionPreviewer, "multiselectionpreviewer", "Multi Selection Previewer")
+	pp.AddTitled(pp.videoDetails, "videodetails", "Video Details")
+	pp.AddTitled(pp.musicDetails, "musicdetails", "Music Details")
+	pp.AddTitled(pp.pictureDetails, "picturedetails", "Picture Details")
 
 	pp.SetVExpand(true)
 	return pp
@@ -67,6 +77,8 @@ func NewPreviewPanel(path string, changePath func(string), specialPathManager *s
 func (pp *PreviewPanel) Update(filePath string) {
 	pp.mediaPreviewer.Close()
 	pp.documentPreviewer.Close()
+	pp.videoDetails.Close()
+	pp.musicDetails.Close()
 	pp.filePath = filePath
 
 	if filePath == "" {
@@ -113,8 +125,20 @@ func (pp *PreviewPanel) Update(filePath string) {
 				pp.SetVisibleChildName("dirviewer")
 			}
 		} else {
-			pp.filePreviewer.SetFile(filePath, info)
-			pp.SetVisibleChildName("filepreviewer")
+			dir := filepath.Dir(filePath)
+			if dir == fileops.GetVideosPath() && fileops.IsVideo(filePath) {
+				pp.videoDetails.SetVideo(filePath, info)
+				pp.SetVisibleChildName("videodetails")
+			} else if dir == fileops.GetMusicPath() && fileops.IsMusic(filePath) {
+				pp.musicDetails.SetMusic(filePath, info)
+				pp.SetVisibleChildName("musicdetails")
+			} else if dir == fileops.GetPicturesPath() && fileops.IsImage(filePath) {
+				pp.pictureDetails.SetPicture(filePath, info)
+				pp.SetVisibleChildName("picturedetails")
+			} else {
+				pp.filePreviewer.SetFile(filePath, info)
+				pp.SetVisibleChildName("filepreviewer")
+			}
 			pp.specialPathManager.AddRecentPath(filePath)
 		}
 	}
