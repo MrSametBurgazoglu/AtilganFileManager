@@ -12,6 +12,7 @@ import (
 
 	"github.com/MrSametBurgazoglu/atilgan/file_list"
 	"github.com/MrSametBurgazoglu/atilgan/fileops"
+	"github.com/MrSametBurgazoglu/atilgan/git"
 	"github.com/MrSametBurgazoglu/atilgan/special_path"
 	"github.com/MrSametBurgazoglu/atilgan/types"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
@@ -38,6 +39,7 @@ type FileViewer struct {
 	FilterBox          *gtk.Box
 	FileViewerHistory  map[string]*FileViewHistory
 	FileViewerList     *file_list.FileGrid
+	GitManager         *git.GitManager
 	stack              *gtk.Stack
 	specialPathManager *special_path.SpecialPathManager
 }
@@ -52,6 +54,7 @@ func NewFileViewer(mainWindow *gtk.Window, path string, pathChanged func(string)
 		FileViewerHistory:  make(map[string]*FileViewHistory),
 		FileViewerList:     file_list.NewFileGrid(true, specialPathManager, mainWindow),
 		DefaultFilters:     []string{"Directories", "Executables", "Hidden"},
+		GitManager:         git.NewGitManager(),
 		specialPathManager: specialPathManager,
 		FilterBox:          gtk.NewBox(gtk.OrientationVertical, 6),
 	}
@@ -129,6 +132,9 @@ func (viewer *FileViewer) Refresh(newFilter bool) {
 		fmt.Println("Error reading directory:", err)
 		return
 	}
+
+	// Refresh Git Status
+	viewer.GitManager.Refresh(viewer.Path)
 
 	if newFilter {
 		viewer.Filters = []string{}
@@ -263,10 +269,11 @@ func (viewer *FileViewer) Refresh(newFilter bool) {
 			group = string(firstRune)
 		}
 		listItem := &types.ListItem{
-			Name:  entry.Name(),
-			Path:  fullPath,
-			Group: group,
-			IsDir: entry.IsDir(),
+			Name:      entry.Name(),
+			Path:      fullPath,
+			Group:     group,
+			IsDir:     entry.IsDir(),
+			GitStatus: string(viewer.GitManager.GetStatus(fullPath)),
 		}
 		if listItem.IsDir {
 			listItem.ItemCount = getDirItemCount(fullPath)

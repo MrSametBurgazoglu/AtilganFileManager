@@ -19,6 +19,7 @@ import (
 	"github.com/MrSametBurgazoglu/atilgan/types"
 	"github.com/MrSametBurgazoglu/atilgan/viewer"
 	"github.com/MrSametBurgazoglu/atilgan/viewer_panel"
+	"github.com/MrSametBurgazoglu/atilgan/workspace"
 	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
@@ -35,7 +36,7 @@ type MainBox struct {
 	Path           string
 	Pathbar        *pathbar.PathBar
 	PreviewerPanel *previewer_panel.PreviewPanel
-	ViewerPanel    *viewer_panel.Panel
+	Workspace      *workspace.Workspace
 	SpecialPaths   *special_path.SpecialPathManager
 	Search         *search.Search
 	SideBar        *sidebar.Sidebar
@@ -57,20 +58,6 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 		panic(err)
 	}
 
-	headerBar.SearchButton.ConnectClicked(func() {
-		isVisible := !mainBox.Search.Visible()
-		mainBox.Search.SetVisible(isVisible)
-		mainBox.Pathbar.SetVisible(!isVisible)
-		mainBox.ViewerPanel.SetVisible(!isVisible)
-		mainBox.PreviewerPanel.SetVisible(!isVisible)
-		
-		if isVisible {
-			headerBar.SetTitleWidget(mainBox.Search.SearchBar)
-		} else {
-			headerBar.SetTitleWidget(gtk.NewBox(gtk.OrientationHorizontal, 0))
-		}
-	})
-
 	mainBox.SpecialPaths, err = special_path.NewSpecialPathManager()
 	if err != nil {
 		println(err.Error())
@@ -79,6 +66,23 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 	mainBox.Path = curdir
 	mainBox.Pathbar = pathbar.NewPathBar(mainBox.pathChanged)
 	mainBox.Pathbar.UpdatePathBar(curdir)
+
+	mainBox.Workspace = workspace.NewWorkspace(&mainWindow.Window, mainBox.SpecialPaths, mainBox.pathChanged)
+	mainBox.Workspace.SetupPanel = mainBox.setupPanel
+
+	headerBar.SearchButton.ConnectClicked(func() {
+		isVisible := !mainBox.Search.Visible()
+		mainBox.Search.SetVisible(isVisible)
+		mainBox.Pathbar.SetVisible(!isVisible)
+		mainBox.Workspace.SetVisible(!isVisible)
+		mainBox.PreviewerPanel.SetVisible(!isVisible)
+		
+		if isVisible {
+			headerBar.SetTitleWidget(mainBox.Search.SearchBar)
+		} else {
+			headerBar.SetTitleWidget(gtk.NewBox(gtk.OrientationHorizontal, 0))
+		}
+	})
 
 	mainBox.Search = search.NewSearch(curdir)
 	mainBox.Search.SetVisible(false)
@@ -105,6 +109,7 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 
 	contentVBox := gtk.NewBox(gtk.OrientationVertical, 0)
 	contentVBox.Append(mainBox.Search)
+	contentVBox.Append(mainBox.Workspace.TabBar)
 
 	contentPaned := gtk.NewPaned(gtk.OrientationHorizontal)
 	contentPaned.SetHExpand(true)
@@ -118,14 +123,34 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 	contentPage := adw.NewNavigationPage(contentToolbar, "Content")
 	splitView.SetContent(contentPage)
 
-	mainBox.ViewerPanel = viewer_panel.NewPanel(&mainWindow.Window, curdir, mainBox.pathChanged, mainBox.SpecialPaths)
+	mainBox.Workspace.NewTab(curdir)
+
+	mainBox.Workspace.TabView.Connect("notify::selected-page", func() {
+		activePanel := mainBox.Workspace.GetActivePanel()
+		if activePanel != nil {
+			mainBox.Path = activePanel.Path
+			mainBox.Pathbar.UpdatePathBar(mainBox.Path)
+			mainBox.SideBar.SetPath(mainBox.Path)
+			mainBox.updatePreviewer()
+		}
+	})
+
+	mainBox.Workspace.TabView.Connect("close-page", func(page *adw.TabPage) bool {
+		delete(mainBox.Workspace.PagePanels, page)
+		mainBox.Workspace.TabView.ClosePageFinish(page, true)
+		return true
+	})
+
+	mainBox.SideBar.OnNewTab = func() {
+		mainBox.Workspace.NewTab(mainBox.Path)
+	}
 
 	headerBar.PackStart(mainBox.Pathbar)
 
-	mainBox.ViewerPanel.SetHExpand(true)
-	mainBox.ViewerPanel.SetVExpand(true)
-	mainBox.ViewerPanel.SetSizeRequest(300, -1)
-	contentPaned.SetStartChild(mainBox.ViewerPanel)
+	mainBox.Workspace.SetHExpand(true)
+	mainBox.Workspace.SetVExpand(true)
+	mainBox.Workspace.SetSizeRequest(300, -1)
+	contentPaned.SetStartChild(mainBox.Workspace)
 	contentPaned.SetResizeStartChild(true)
 	contentPaned.SetShrinkStartChild(false)
 	contentPaned.SetResizeEndChild(true)
@@ -143,7 +168,10 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 	copyCutPreviewer := previewer.NewCopyCutPreviewer()
 	copyCutPreviewer.SetVisible(false)
 	copyCutPreviewer.OnClear = func() {
-		mainBox.ViewerPanel.FileViewer.CleanCopyCutFiles()
+		activePanel := mainBox.Workspace.GetActivePanel()
+		if activePanel != nil {
+			activePanel.FileViewer.CleanCopyCutFiles()
+		}
 		copyCutPreviewer.SetVisible(false)
 	}
 	rightBox.Append(copyCutPreviewer)
@@ -163,26 +191,6 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 
 	mainBox.setupActionsMenu(mainWindow, headerBar, togglePreviewer)
 
-	mainBox.ViewerPanel.FileViewer.FileViewerList.SelectionChanged = func(index int) {
-		mainBox.updatePreviewer()
-	}
-
-	mainBox.ViewerPanel.FileViewer.FileViewerList.PathChanged = mainBox.pathChanged
-
-	mainBox.ViewerPanel.FileViewer.FileViewerList.KeyLeftPressed = func() {
-		specialPath := mainBox.SpecialPaths.GetPath(mainBox.ViewerPanel.FileViewer.Path)
-		if specialPath != nil {
-			mainBox.pathChanged(specialPath.GetParentPath())
-		} else {
-			parentDir := filepath.Dir(mainBox.ViewerPanel.FileViewer.Path)
-			mainBox.pathChanged(parentDir)
-			selectHistory, isExist := mainBox.ViewerPanel.FileViewer.FileViewerHistory[parentDir]
-			if isExist {
-				mainBox.ViewerPanel.FileViewer.FileViewerList.SetItem(selectHistory.Index)
-			}
-		}
-	}
-
 	controller := gtk.NewShortcutController()
 
 	renameTrigger := gtk.NewKeyvalTrigger(
@@ -191,7 +199,11 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 	)
 
 	renameShortcut := gtk.NewShortcut(renameTrigger, gtk.NewCallbackAction(func(widget gtk.Widgetter, args *glib.Variant) (ok bool) {
-		selectedItem := mainBox.ViewerPanel.FileViewer.FileViewerList.Items[mainBox.ViewerPanel.FileViewer.FileViewerList.SelectedIDX]
+		activePanel := mainBox.getActivePanel()
+		if activePanel == nil {
+			return true
+		}
+		selectedItem := activePanel.FileViewer.FileViewerList.Items[activePanel.FileViewer.FileViewerList.SelectedIDX]
 		renameWindow := rename_popup.NewRenameWindow(mainBox.Path, selectedItem.Path)
 		renameWindow.SetTransientFor(&mainWindow.Window)
 		renameWindow.SetVisible(true)
@@ -205,14 +217,18 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 	)
 
 	searchShortcut := gtk.NewShortcut(searchTrigger, gtk.NewCallbackAction(func(widget gtk.Widgetter, args *glib.Variant) (ok bool) {
-		mainBox.ViewerPanel.FileViewer.SearchRevealer.SetRevealChild(!mainBox.ViewerPanel.FileViewer.SearchRevealer.RevealChild())
-		if mainBox.ViewerPanel.FileViewer.SearchRevealer.RevealChild() {
-			mainBox.ViewerPanel.FileViewer.SearchEntry.GrabFocus()
-			mainBox.ViewerPanel.FileViewer.SearchRevealer.SetVisible(true)
-			mainBox.ViewerPanel.FileViewer.FileViewerList.CanFocus = false
+		activePanel := mainBox.getActivePanel()
+		if activePanel == nil {
+			return true
+		}
+		activePanel.FileViewer.SearchRevealer.SetRevealChild(!activePanel.FileViewer.SearchRevealer.RevealChild())
+		if activePanel.FileViewer.SearchRevealer.RevealChild() {
+			activePanel.FileViewer.SearchEntry.GrabFocus()
+			activePanel.FileViewer.SearchRevealer.SetVisible(true)
+			activePanel.FileViewer.FileViewerList.CanFocus = false
 		} else {
-			mainBox.ViewerPanel.FileViewer.SearchRevealer.SetVisible(false)
-			mainBox.ViewerPanel.FileViewer.FileViewerList.CanFocus = true
+			activePanel.FileViewer.SearchRevealer.SetVisible(false)
+			activePanel.FileViewer.FileViewerList.CanFocus = true
 		}
 		return true
 	}))
@@ -220,39 +236,44 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 
 	selectAllTrigger := gtk.NewKeyvalTrigger(gdk.KEY_a, gdk.ControlMask)
 	selectAllShortcut := gtk.NewShortcut(selectAllTrigger, gtk.NewCallbackAction(func(widget gtk.Widgetter, args *glib.Variant) (ok bool) {
-		mainBox.ViewerPanel.FileViewer.FileViewerList.SelectAll()
+		activePanel := mainBox.getActivePanel()
+		if activePanel != nil {
+			activePanel.FileViewer.FileViewerList.SelectAll()
+		}
 		return true
 	}))
 	controller.AddShortcut(selectAllShortcut)
 
 	copyTrigger := gtk.NewKeyvalTrigger(gdk.KEY_c, gdk.ControlMask)
 	copyShortcut := gtk.NewShortcut(copyTrigger, gtk.NewCallbackAction(func(widget gtk.Widgetter, args *glib.Variant) (ok bool) {
-		if mainBox.SpecialPaths.Paths[mainBox.Path] != nil {
+		activePanel := mainBox.getActivePanel()
+		if activePanel == nil || mainBox.SpecialPaths.Paths[mainBox.Path] != nil {
 			return true
 		}
-		mainBox.ViewerPanel.FileViewer.IsCopy = true
-		mainBox.ViewerPanel.FileViewer.AddSelectedToCopyCut()
+		activePanel.FileViewer.IsCopy = true
+		activePanel.FileViewer.AddSelectedToCopyCut()
 
 		copyCutPreviewer.IsCut = false
-		copyCutPreviewer.SetFiles(mainBox.ViewerPanel.FileViewer.CopiedCuttedFiles)
+		copyCutPreviewer.SetFiles(activePanel.FileViewer.CopiedCuttedFiles)
 		copyCutPreviewer.SetVisible(true)
 		
 		// For now, still just copy the primary focused file to system clipboard
-		clipboard.CopyFileToClipboard(gio.NewFileForPath(mainBox.ViewerPanel.FileViewer.FileViewerList.Items[mainBox.ViewerPanel.FileViewer.FileViewerList.SelectedIDX].Path))
+		clipboard.CopyFileToClipboard(gio.NewFileForPath(activePanel.FileViewer.FileViewerList.Items[activePanel.FileViewer.FileViewerList.SelectedIDX].Path))
 		return true
 	}))
 	controller.AddShortcut(copyShortcut)
 
 	cutTrigger := gtk.NewKeyvalTrigger(gdk.KEY_x, gdk.ControlMask)
 	cutShortcut := gtk.NewShortcut(cutTrigger, gtk.NewCallbackAction(func(widget gtk.Widgetter, args *glib.Variant) (ok bool) {
-		if mainBox.SpecialPaths.Paths[mainBox.Path] != nil {
+		activePanel := mainBox.getActivePanel()
+		if activePanel == nil || mainBox.SpecialPaths.Paths[mainBox.Path] != nil {
 			return true
 		}
-		mainBox.ViewerPanel.FileViewer.IsCopy = true
-		mainBox.ViewerPanel.FileViewer.IsCut = true
-		mainBox.ViewerPanel.FileViewer.AddSelectedToCopyCut()
+		activePanel.FileViewer.IsCopy = true
+		activePanel.FileViewer.IsCut = true
+		activePanel.FileViewer.AddSelectedToCopyCut()
 		copyCutPreviewer.IsCut = true
-		copyCutPreviewer.SetFiles(mainBox.ViewerPanel.FileViewer.CopiedCuttedFiles)
+		copyCutPreviewer.SetFiles(activePanel.FileViewer.CopiedCuttedFiles)
 		copyCutPreviewer.SetVisible(true)
 		return true
 	}))
@@ -260,21 +281,22 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 
 	pasteTrigger := gtk.NewKeyvalTrigger(gdk.KEY_v, gdk.ControlMask)
 	pasteShortcut := gtk.NewShortcut(pasteTrigger, gtk.NewCallbackAction(func(widget gtk.Widgetter, args *glib.Variant) (ok bool) {
-		if mainBox.SpecialPaths.Paths[mainBox.Path] != nil {
+		activePanel := mainBox.getActivePanel()
+		if activePanel == nil || mainBox.SpecialPaths.Paths[mainBox.Path] != nil {
 			return true
 		}
 		headerBar.ShowProgress()
 		go func() error {
-			if err := mainBox.ViewerPanel.FileViewer.ExecuteCopyPaste(func(f float64) {
+			if err := activePanel.FileViewer.ExecuteCopyPaste(func(f float64) {
 				glib.IdleAdd(func() {
 					headerBar.SetProgress(f)
 				})
 			}); err == nil {
 				glib.IdleAdd(func() {
 					mainBox.pathChanged(mainBox.Path)
-					mainBox.ViewerPanel.FileViewer.CleanCopyCutFiles()
-					mainBox.ViewerPanel.FileViewer.IsCopy = false
-					mainBox.ViewerPanel.FileViewer.IsCut = false
+					activePanel.FileViewer.CleanCopyCutFiles()
+					activePanel.FileViewer.IsCopy = false
+					activePanel.FileViewer.IsCut = false
 					copyCutPreviewer.SetVisible(false)
 					headerBar.HideProgress()
 				})
@@ -287,9 +309,12 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 
 	escapeTrigger := gtk.NewKeyvalTrigger(gdk.KEY_Escape, 0)
 	escapeShortcut := gtk.NewShortcut(escapeTrigger, gtk.NewCallbackAction(func(widget gtk.Widgetter, args *glib.Variant) (ok bool) {
-		mainBox.ViewerPanel.FileViewer.CleanCopyCutFiles()
-		mainBox.ViewerPanel.FileViewer.IsCopy = false
-		mainBox.ViewerPanel.FileViewer.IsCut = false
+		activePanel := mainBox.getActivePanel()
+		if activePanel != nil {
+			activePanel.FileViewer.CleanCopyCutFiles()
+			activePanel.FileViewer.IsCopy = false
+			activePanel.FileViewer.IsCut = false
+		}
 		copyCutPreviewer.SetVisible(false)
 		return true
 	}))
@@ -312,26 +337,17 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 		)
 
 		letterShortcut := gtk.NewShortcut(trigger, gtk.NewCallbackAction(func(widget gtk.Widgetter, args *glib.Variant) (ok bool) {
-			mainBox.ViewerPanel.FileViewer.FileViewerList.SetSelectedItemWithLetter(s)
-			mainBox.updatePreviewer()
+			activePanel := mainBox.getActivePanel()
+			if activePanel != nil {
+				activePanel.FileViewer.FileViewerList.SetSelectedItemWithLetter(s)
+				mainBox.updatePreviewer()
+			}
 			return true
 		}))
 		controller.AddShortcut(letterShortcut)
 	}
 
 	mainWindow.AddController(controller)
-
-	mainBox.ViewerPanel.FileViewer.FileViewerList.KeyRightPressed = func() {
-		selectedIndex := mainBox.ViewerPanel.FileViewer.FileViewerList.SelectedIDX
-		selectedItem := mainBox.ViewerPanel.FileViewer.FileViewerList.Items[selectedIndex]
-		mainBox.ViewerPanel.FileViewer.FileViewerHistory[mainBox.Path] = &viewer.FileViewHistory{
-			Path:  selectedItem.Path,
-			Index: selectedIndex,
-		}
-		if selectedItem.IsDir {
-			mainBox.pathChanged(selectedItem.Path)
-		}
-	}
 
 	keyController := gtk.NewEventControllerKey()
 	keyController.ConnectKeyReleased(func(keyval uint, keycode uint, state gdk.ModifierType) {
@@ -345,6 +361,48 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 
 	return mainBox
 }
+func (m *MainBox) getActivePanel() *viewer_panel.Panel {
+	return m.Workspace.GetActivePanel()
+}
+
+func (m *MainBox) setupPanel(panel *viewer_panel.Panel) {
+	panel.FileViewer.FileViewerList.SelectionChanged = func(index int) {
+		m.updatePreviewer()
+	}
+
+	panel.FileViewer.FileViewerList.PathChanged = m.pathChanged
+
+	panel.FileViewer.FileViewerList.KeyLeftPressed = func() {
+		specialPath := m.SpecialPaths.GetPath(panel.FileViewer.Path)
+		if specialPath != nil {
+			m.pathChanged(specialPath.GetParentPath())
+		} else {
+			parentDir := filepath.Dir(panel.FileViewer.Path)
+			m.pathChanged(parentDir)
+			selectHistory, isExist := panel.FileViewer.FileViewerHistory[parentDir]
+			if isExist {
+				panel.FileViewer.FileViewerList.SetItem(selectHistory.Index)
+			}
+		}
+	}
+
+	panel.FileViewer.FileViewerList.PinRequested = func(path string) {
+		m.SideBar.AddPin(path)
+	}
+
+	panel.FileViewer.FileViewerList.KeyRightPressed = func() {
+		selectedIndex := panel.FileViewer.FileViewerList.SelectedIDX
+		selectedItem := panel.FileViewer.FileViewerList.Items[selectedIndex]
+		panel.FileViewer.FileViewerHistory[panel.Path] = &viewer.FileViewHistory{
+			Path:  selectedItem.Path,
+			Index: selectedIndex,
+		}
+		if selectedItem.IsDir {
+			m.pathChanged(selectedItem.Path)
+		}
+	}
+}
+
 func main() {
 	app := adw.NewApplication("com.github.mrsametburgazoglu.atilgan", gio.ApplicationFlagsNone)
 	app.ConnectActivate(func() {
@@ -387,7 +445,10 @@ func activate(app *adw.Application) {
 	window.SetContent(mainBox)
 
 	window.SetVisible(true)
-	mainBox.ViewerPanel.FileViewer.FileViewerList.DrawingArea.GrabFocus()
+	activePanel := mainBox.getActivePanel()
+	if activePanel != nil {
+		activePanel.FileViewer.FileViewerList.DrawingArea.GrabFocus()
+	}
 }
 
 func (m *MainBox) pathChanged(path string) {
@@ -398,13 +459,25 @@ func (m *MainBox) pathChanged(path string) {
 	if m.Search.Visible() {
 		m.Search.SetVisible(false)
 		m.Pathbar.SetVisible(true)
-		m.ViewerPanel.SetVisible(true)
+		m.Workspace.SetVisible(true)
 		m.PreviewerPanel.SetVisible(true)
 		m.HeaderBar.SetTitleWidget(gtk.NewBox(gtk.OrientationHorizontal, 0))
 	}
 
 	m.Path = path
-	m.ViewerPanel.SetPath(path)
+	activePanel := m.getActivePanel()
+	if activePanel != nil {
+		activePanel.SetPath(path)
+		
+		selectedPage := m.Workspace.TabView.SelectedPage()
+		if selectedPage != nil {
+			title := filepath.Base(path)
+			if title == "." || title == "/" || title == "" {
+				title = "Root"
+			}
+			selectedPage.SetTitle(title)
+		}
+	}
 	
 	specialPath := m.SpecialPaths.GetPath(path)
 	if specialPath == nil {
@@ -418,7 +491,13 @@ func (m *MainBox) pathChanged(path string) {
 }
 
 func (m *MainBox) updatePreviewer() {
-	list := m.ViewerPanel.FileViewer.FileViewerList
+	activePanel := m.getActivePanel()
+	if activePanel == nil {
+		m.PreviewerPanel.Update("")
+		return
+	}
+
+	list := activePanel.FileViewer.FileViewerList
 	if len(list.Items) == 0 {
 		m.PreviewerPanel.Update("")
 		return
@@ -496,7 +575,10 @@ func (m *MainBox) setupActionsMenu(mainWindow *adw.ApplicationWindow, headerBar 
 	actionsBox.Append(gtk.NewSeparator(gtk.OrientationHorizontal))
 
 	actionsBox.Append(createActionBtn("utilities-terminal-symbolic", "Open Terminal", func() {
-		m.ViewerPanel.FileViewer.OpenTerminal()
+		activePanel := m.getActivePanel()
+		if activePanel != nil {
+			activePanel.FileViewer.OpenTerminal()
+		}
 	}))
 	actionsBox.Append(createActionBtn("view-reveal-symbolic", "Toggle Previewer", togglePreviewer))
 
@@ -532,23 +614,35 @@ func (m *MainBox) setupActionsMenu(mainWindow *adw.ApplicationWindow, headerBar 
 	sortTypeBtn := gtk.NewButtonWithLabel("Type")
 
 	sortNameBtn.ConnectClicked(func() {
-		m.ViewerPanel.FileViewer.SortOrder = types.SortByName
-		m.ViewerPanel.FileViewer.Refresh(false)
+		activePanel := m.getActivePanel()
+		if activePanel != nil {
+			activePanel.FileViewer.SortOrder = types.SortByName
+			activePanel.FileViewer.Refresh(false)
+		}
 		actionsPopover.Popdown()
 	})
 	sortTimeBtn.ConnectClicked(func() {
-		m.ViewerPanel.FileViewer.SortOrder = types.SortByTime
-		m.ViewerPanel.FileViewer.Refresh(false)
+		activePanel := m.getActivePanel()
+		if activePanel != nil {
+			activePanel.FileViewer.SortOrder = types.SortByTime
+			activePanel.FileViewer.Refresh(false)
+		}
 		actionsPopover.Popdown()
 	})
 	sortSizeBtn.ConnectClicked(func() {
-		m.ViewerPanel.FileViewer.SortOrder = types.SortBySize
-		m.ViewerPanel.FileViewer.Refresh(false)
+		activePanel := m.getActivePanel()
+		if activePanel != nil {
+			activePanel.FileViewer.SortOrder = types.SortBySize
+			activePanel.FileViewer.Refresh(false)
+		}
 		actionsPopover.Popdown()
 	})
 	sortTypeBtn.ConnectClicked(func() {
-		m.ViewerPanel.FileViewer.SortOrder = types.SortByType
-		m.ViewerPanel.FileViewer.Refresh(false)
+		activePanel := m.getActivePanel()
+		if activePanel != nil {
+			activePanel.FileViewer.SortOrder = types.SortByType
+			activePanel.FileViewer.Refresh(false)
+		}
 		actionsPopover.Popdown()
 	})
 
@@ -569,5 +663,18 @@ func (m *MainBox) setupActionsMenu(mainWindow *adw.ApplicationWindow, headerBar 
 	filterLabel.SetHAlign(gtk.AlignStart)
 	actionsBox.Append(filterLabel)
 	
-	actionsBox.Append(m.ViewerPanel.FileViewer.FilterBox)
+	filterWrapper := gtk.NewBox(gtk.OrientationVertical, 0)
+	actionsBox.Append(filterWrapper)
+
+	actionsPopover.Connect("map", func() {
+		activePanel := m.getActivePanel()
+		if activePanel != nil {
+			for child := filterWrapper.FirstChild(); child != nil; {
+				next := gtk.BaseWidget(child).NextSibling()
+				filterWrapper.Remove(child)
+				child = next
+			}
+			filterWrapper.Append(activePanel.FileViewer.FilterBox)
+		}
+	})
 }

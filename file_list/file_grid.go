@@ -3,10 +3,12 @@ package file_list
 import (
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"slices"
 	"strings"
 
 	"github.com/MrSametBurgazoglu/atilgan/fileops"
+	"github.com/MrSametBurgazoglu/atilgan/rename_popup"
 	"github.com/MrSametBurgazoglu/atilgan/special_path"
 	"github.com/MrSametBurgazoglu/atilgan/tag_popup"
 	"github.com/MrSametBurgazoglu/atilgan/theme"
@@ -58,6 +60,7 @@ type FileGrid struct {
 
 	SelectionChanged func(index int)
 	PathChanged      func(path string)
+	PinRequested     func(path string)
 	KeyRightPressed  func()
 	KeyLeftPressed   func()
 }
@@ -487,6 +490,27 @@ func (fl *FileGrid) drawGridItem(cr *cairo.Context, idx int, item *types.ListIte
 	cr.MoveTo(float64(x)+(float64(gridItemWidth)-extents.Width)/2, iconY+float64(gridIconSize)+20)
 	cr.ShowText(displayName)
 
+	// Git Status Indicator
+	if item.GitStatus != "" && item.GitStatus != "unchanged" {
+		dotSize := 4.0
+		dotX := float64(x) + (float64(gridItemWidth)+extents.Width)/2 + 4
+		dotY := iconY + float64(gridIconSize) + 20 - extents.Height/2
+		
+		switch item.GitStatus {
+		case "modified":
+			cr.SetSourceRGBA(0.9, 0.6, 0.1, 1.0) // Orange
+		case "added":
+			cr.SetSourceRGBA(0.2, 0.7, 0.2, 1.0) // Green
+		case "untracked":
+			cr.SetSourceRGBA(0.5, 0.5, 0.5, 1.0) // Grey
+		default:
+			cr.SetSourceRGBA(0.1, 0.5, 0.8, 1.0) // Blue for others
+		}
+		
+		cr.Arc(dotX, dotY, dotSize, 0, 2*3.14159)
+		cr.Fill()
+	}
+
 	// Metadata
 	cr.SetSourceRGBA(float64(fl.colorTheme.TextColor.Red()), float64(fl.colorTheme.TextColor.Green()), float64(fl.colorTheme.TextColor.Blue()), 0.5)
 	cr.SetFontSize(fl.themeConfig.Fonts.SizeTextSize)
@@ -802,7 +826,110 @@ func (fl *FileGrid) newContextMenuController(da *gtk.DrawingArea) *gtk.GestureCl
 			popoverBox.Append(open)
 			popoverBox.Append(delete)
 			popoverBox.Append(addTag)
+
+			// Bulk Rename option
+			selectedCount := 0
+			for _, selected := range fl.SelectedIdxs {
+				if selected {
+					selectedCount++
+				}
+			}
+			if selectedCount > 1 {
+				bulkRename := gtk.NewButtonWithLabel("Bulk Rename")
+				bulkRename.Connect("clicked", func() {
+					var paths []string
+					for i, selected := range fl.SelectedIdxs {
+						if selected {
+							paths = append(paths, fl.Items[i].Path)
+						}
+					}
+					dir := filepath.Dir(paths[0])
+					bulkWin := rename_popup.NewBulkRenameWindow(dir, paths, fl.PathChanged)
+					bulkWin.SetTransientFor(fl.parent)
+					bulkWin.SetVisible(true)
+					pop.Popdown()
+				})
+				popoverBox.Append(bulkRename)
+			}
+
+			// Archive options
+			isArchive := false
+			ext := strings.ToLower(filepath.Ext(fl.Items[idx].Path))
+			if ext == ".zip" || ext == ".tar" || ext == ".gz" || ext == ".xz" || ext == ".7z" {
+				isArchive = true
+			}
+
+			if isArchive {
+				extract := gtk.NewButtonWithLabel("Extract Here")
+				extract.Connect("clicked", func() {
+					dir := filepath.Dir(fl.Items[idx].Path)
+					var cmd *exec.Cmd
+					if ext == ".zip" {
+						cmd = exec.Command("unzip", fl.Items[idx].Path, "-d", dir)
+					} else {
+						cmd = exec.Command("tar", "-xf", fl.Items[idx].Path, "-C", dir)
+					}
+					go func() {
+						cmd.Run()
+						glib.IdleAdd(func() {
+							fl.PathChanged("")
+						})
+					}()
+					pop.Popdown()
+				})
+				popoverBox.Append(extract)
+			}
+
+			compress := gtk.NewButtonWithLabel("Compress to .zip")
+			compress.Connect("clicked", func() {
+				var paths []string
+				for i, selected := range fl.SelectedIdxs {
+					if selected {
+						paths = append(paths, fl.Items[i].Path)
+					}
+				}
+				zipName := filepath.Base(paths[0]) + ".zip"
+				zipPath := filepath.Join(filepath.Dir(paths[0]), zipName)
+				
+				args := []string{"-r", zipPath}
+				for _, p := range paths {
+					args = append(args, filepath.Base(p))
+				}
+				
+				cmd := exec.Command("zip", args...)
+				cmd.Dir = filepath.Dir(paths[0])
+				go func() {
+					cmd.Run()
+					glib.IdleAdd(func() {
+						fl.PathChanged("")
+					})
+				}()
+				pop.Popdown()
+			})
+			popoverBox.Append(compress)
+
+			properties := gtk.NewButtonWithLabel("Properties")
+			properties.Connect("clicked", func() {
+				propWin := fileops.NewPropertiesWindow(fl.Items[idx].Path)
+				propWin.SetTransientFor(fl.parent)
+				propWin.SetVisible(true)
+				pop.Popdown()
+			})
+			popoverBox.Append(properties)
+
+			if fl.Items[idx].IsDir {
+				pin := gtk.NewButtonWithLabel("Pin to Sidebar")
+				pin.Connect("clicked", func() {
+					if fl.PinRequested != nil {
+						fl.PinRequested(fl.Items[idx].Path)
+					}
+					pop.Popdown()
+				})
+				popoverBox.Append(pin)
+			}
+
 			popoverBox.Append(gtk.NewSeparator(gtk.OrientationHorizontal))
+
 		}
 
 		selectAll := gtk.NewButtonWithLabel("Select All")

@@ -5,18 +5,20 @@ import (
 	"os/user"
 	"runtime"
 
-	"github.com/adrg/xdg"
 	"github.com/MrSametBurgazoglu/atilgan/devices"
+	"github.com/adrg/xdg"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
 
 type Sidebar struct {
 	*gtk.Box
-	locationsBox  *gtk.Box
-	devicesBox    *devices.DeviceManager
-	buttons       map[string]*gtk.Button
-	currentPath   string
-	pathChanged   func(string)
+	locationsBox *gtk.Box
+	pinsBox      *gtk.Box
+	devicesBox   *devices.DeviceManager
+	buttons      map[string]*gtk.Button
+	currentPath  string
+	pathChanged  func(string)
+	OnNewTab     func()
 }
 
 func NewSidebar(pathChanged func(string)) *Sidebar {
@@ -28,12 +30,29 @@ func NewSidebar(pathChanged func(string)) *Sidebar {
 	sidebar := &Sidebar{
 		Box:          box,
 		locationsBox: gtk.NewBox(gtk.OrientationVertical, 8),
+		pinsBox:      gtk.NewBox(gtk.OrientationVertical, 8),
 		devicesBox:   devices.NewDeviceManager(pathChanged),
 		buttons:      make(map[string]*gtk.Button),
 		pathChanged:  pathChanged,
 	}
 
 	box.Append(sidebar.locationsBox)
+
+	newTabBtn := sidebar.createButton("tab-new-symbolic", "New Tab", "")
+	newTabBtn.ConnectClicked(func() {
+		if sidebar.OnNewTab != nil {
+			sidebar.OnNewTab()
+		}
+	})
+	sidebar.locationsBox.Append(newTabBtn)
+
+	pinsLabel := gtk.NewLabel("Bookmarks")
+	pinsLabel.AddCSSClass("caption")
+	pinsLabel.SetHAlign(gtk.AlignStart)
+	pinsLabel.SetMarginStart(12)
+	box.Append(pinsLabel)
+	box.Append(sidebar.pinsBox)
+
 	box.Append(sidebar.devicesBox)
 
 	homeDir, err := getHomeDir()
@@ -69,6 +88,15 @@ func (s *Sidebar) addLocationButton(iconName, labelText, path string) {
 	}
 	btn := s.createButton(iconName, labelText, path)
 	s.locationsBox.Append(btn)
+	s.buttons[path] = btn
+}
+
+func (s *Sidebar) AddPin(path string) {
+	if _, ok := s.buttons[path]; ok {
+		return
+	}
+	btn := s.createButton("folder-symbolic", path, path)
+	s.pinsBox.Append(btn)
 	s.buttons[path] = btn
 }
 
