@@ -384,10 +384,10 @@ func (m *MainBox) setupPanel(panel *viewer_panel.Panel) {
 	}
 	panel.VideoViewer.FileViewerList.PathChanged = m.pathChanged
 
-	panel.PictureViewer.FileViewerList.SelectionChanged = func(index int) {
+	panel.PictureViewer.SelectionChanged = func(index int) {
 		m.updatePreviewer()
 	}
-	panel.PictureViewer.FileViewerList.PathChanged = m.pathChanged
+	// Note: PathChanged is passed into NewPictureViewer directly now.
 
 	panel.MusicViewer.FileViewerList.SelectionChanged = func(index int) {
 		m.updatePreviewer()
@@ -533,10 +533,10 @@ func (m *MainBox) updatePreviewer() {
 		items = activePanel.VideoViewer.FileViewerList.Items
 		selectedIdxs = activePanel.VideoViewer.FileViewerList.SelectedIdxs
 		selectedIdx = activePanel.VideoViewer.FileViewerList.SelectedIDX
-	} else if path == fileops.GetPicturesPath() && activePanel.PictureViewer != nil && activePanel.PictureViewer.FileViewerList != nil {
-		items = activePanel.PictureViewer.FileViewerList.Items
-		selectedIdxs = activePanel.PictureViewer.FileViewerList.SelectedIdxs
-		selectedIdx = activePanel.PictureViewer.FileViewerList.SelectedIDX
+	} else if path == fileops.GetPicturesPath() && activePanel.PictureViewer != nil {
+		items = activePanel.PictureViewer.Items
+		selectedIdxs = activePanel.PictureViewer.SelectedIdxs
+		selectedIdx = activePanel.PictureViewer.SelectedIDX
 	} else if path == fileops.GetMusicPath() && activePanel.MusicViewer != nil && activePanel.MusicViewer.FileViewerList != nil {
 		items = activePanel.MusicViewer.FileViewerList.Items
 		selectedIdxs = nil
