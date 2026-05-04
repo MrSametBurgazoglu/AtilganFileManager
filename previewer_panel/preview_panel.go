@@ -12,32 +12,34 @@ import (
 
 type PreviewPanel struct {
 	*gtk.Stack
-	imageDirPreviewer  *previewer.ImageDirPreviewer
-	dirPreviewer       *previewer.DirPreviewer
-	filePreviewer      *previewer.FilePreviewer
-	imagePreviewer     *previewer.ImagePreviewer
-	textPreviewer      *previewer.TextPreviewer
-	codePreviewer      *previewer.CodePreviewer
-	mediaPreviewer     *previewer.MediaPreviewer
-	documentPreviewer  *previewer.DocumentPreviewer
-	trashPreviewer     *previewer.TrashPreviewer
-	filePath           string
-	specialPathManager *special_path.SpecialPathManager
+	imageDirPreviewer       *previewer.ImageDirPreviewer
+	dirPreviewer            *previewer.DirPreviewer
+	filePreviewer           *previewer.FilePreviewer
+	imagePreviewer          *previewer.ImagePreviewer
+	textPreviewer           *previewer.TextPreviewer
+	codePreviewer           *previewer.CodePreviewer
+	mediaPreviewer          *previewer.MediaPreviewer
+	documentPreviewer       *previewer.DocumentPreviewer
+	trashPreviewer          *previewer.TrashPreviewer
+	multiSelectionPreviewer *previewer.MultiSelectionPreviewer
+	filePath                string
+	specialPathManager      *special_path.SpecialPathManager
 }
 
 func NewPreviewPanel(path string, changePath func(string), specialPathManager *special_path.SpecialPathManager) *PreviewPanel {
 	pp := &PreviewPanel{
-		Stack:              gtk.NewStack(),
-		imageDirPreviewer:  previewer.NewImageDirPreviewer(path, changePath, specialPathManager),
-		dirPreviewer:       previewer.NewDirPreviewer(path, changePath, specialPathManager),
-		filePreviewer:      previewer.NewFilePreviewer(),
-		imagePreviewer:     previewer.NewImagePreviewer(),
-		textPreviewer:      previewer.NewTextPreviewer(),
-		codePreviewer:      previewer.NewCodePreviewer(),
-		mediaPreviewer:     previewer.NewMediaPreviewer(),
-		documentPreviewer:  previewer.NewDocumentPreviewer(),
-		trashPreviewer:     previewer.NewTrashPreviewer(func() { changePath("trash://") }),
-		specialPathManager: specialPathManager,
+		Stack:                   gtk.NewStack(),
+		imageDirPreviewer:       previewer.NewImageDirPreviewer(path, changePath, specialPathManager),
+		dirPreviewer:            previewer.NewDirPreviewer(path, changePath, specialPathManager),
+		filePreviewer:           previewer.NewFilePreviewer(),
+		imagePreviewer:          previewer.NewImagePreviewer(),
+		textPreviewer:           previewer.NewTextPreviewer(),
+		codePreviewer:           previewer.NewCodePreviewer(),
+		mediaPreviewer:          previewer.NewMediaPreviewer(),
+		documentPreviewer:       previewer.NewDocumentPreviewer(),
+		trashPreviewer:          previewer.NewTrashPreviewer(func() { changePath("trash://") }),
+		multiSelectionPreviewer: previewer.NewMultiSelectionPreviewer(),
+		specialPathManager:      specialPathManager,
 	}
 	pp.AddCSSClass("preview-panel")
 
@@ -56,6 +58,7 @@ func NewPreviewPanel(path string, changePath func(string), specialPathManager *s
 	pp.AddTitled(pp.mediaPreviewer, "mediapreviewer", "Media Previewer")
 	pp.AddTitled(pp.documentPreviewer, "documentpreviewer", "Document Previewer")
 	pp.AddTitled(pp.trashPreviewer, "trashpreviewer", "Trash Previewer")
+	pp.AddTitled(pp.multiSelectionPreviewer, "multiselectionpreviewer", "Multi Selection Previewer")
 
 	pp.SetVExpand(true)
 	return pp
@@ -115,6 +118,13 @@ func (pp *PreviewPanel) Update(filePath string) {
 			pp.specialPathManager.AddRecentPath(filePath)
 		}
 	}
+}
+
+func (pp *PreviewPanel) UpdateMultiple(paths []string) {
+	pp.mediaPreviewer.Close()
+	pp.documentPreviewer.Close()
+	pp.multiSelectionPreviewer.SetFiles(paths)
+	pp.SetVisibleChildName("multiselectionpreviewer")
 }
 
 func (pp *PreviewPanel) ShowSpecificPreviewer() {

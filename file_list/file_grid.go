@@ -219,6 +219,9 @@ func (fl *FileGrid) SetItem(index int) {
 		fl.SelectedIdxs = make(map[int]bool)
 		fl.SelectedIdxs[index] = true
 		fl.DrawingArea.QueueDraw()
+		if fl.SelectionChanged != nil {
+			fl.SelectionChanged(fl.SelectedIDX)
+		}
 	}
 }
 
@@ -227,6 +230,9 @@ func (fl *FileGrid) SelectAll() {
 		fl.SelectedIdxs[i] = true
 	}
 	fl.DrawingArea.QueueDraw()
+	if fl.SelectionChanged != nil {
+		fl.SelectionChanged(fl.SelectedIDX)
+	}
 }
 
 func (fl *FileGrid) ClearSelection() {
@@ -235,6 +241,9 @@ func (fl *FileGrid) ClearSelection() {
 		fl.SelectedIdxs[fl.SelectedIDX] = true
 	}
 	fl.DrawingArea.QueueDraw()
+	if fl.SelectionChanged != nil {
+		fl.SelectionChanged(fl.SelectedIDX)
+	}
 }
 
 func (fl *FileGrid) AddCopyCutItem(path string) bool {
@@ -698,6 +707,9 @@ func (fl *FileGrid) newGestureClick(da *gtk.DrawingArea) *gtk.GestureClick {
 				// Toggle selection
 				fl.SelectedIDX = idx
 				fl.SelectedIdxs[idx] = !fl.SelectedIdxs[idx]
+				if fl.SelectionChanged != nil {
+					fl.SelectionChanged(fl.SelectedIDX)
+				}
 			} else if state&gdk.ShiftMask != 0 {
 				// Range selection
 				start := fl.SelectedIDX
@@ -709,6 +721,9 @@ func (fl *FileGrid) newGestureClick(da *gtk.DrawingArea) *gtk.GestureClick {
 					fl.SelectedIdxs[i] = true
 				}
 				fl.SelectedIDX = idx
+				if fl.SelectionChanged != nil {
+					fl.SelectionChanged(fl.SelectedIDX)
+				}
 			} else {
 				// Single selection
 				fl.selectItem(idx)

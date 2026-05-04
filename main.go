@@ -418,12 +418,27 @@ func (m *MainBox) pathChanged(path string) {
 }
 
 func (m *MainBox) updatePreviewer() {
-	if len(m.ViewerPanel.FileViewer.FileViewerList.Items) == 0 {
+	list := m.ViewerPanel.FileViewer.FileViewerList
+	if len(list.Items) == 0 {
 		m.PreviewerPanel.Update("")
 		return
 	}
-	selected := m.ViewerPanel.FileViewer.FileViewerList.Items[m.ViewerPanel.FileViewer.FileViewerList.SelectedIDX]
-	m.PreviewerPanel.Update(selected.Path)
+
+	selectedPaths := []string{}
+	for i := 0; i < len(list.Items); i++ {
+		if list.SelectedIdxs[i] {
+			selectedPaths = append(selectedPaths, list.Items[i].Path)
+		}
+	}
+
+	if len(selectedPaths) > 1 {
+		m.PreviewerPanel.UpdateMultiple(selectedPaths)
+	} else if len(selectedPaths) == 1 {
+		m.PreviewerPanel.Update(selectedPaths[0])
+	} else {
+		selected := list.Items[list.SelectedIDX]
+		m.PreviewerPanel.Update(selected.Path)
+	}
 }
 
 func (m *MainBox) setupActionsMenu(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar, togglePreviewer func()) {
