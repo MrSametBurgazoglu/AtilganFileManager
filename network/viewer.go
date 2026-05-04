@@ -139,8 +139,6 @@ func (nv *NetworkViewer) createConnectionCard(conn Connection) *gtk.Box {
 	card.AddCSSClass("network-card")
 	card.SetSizeRequest(180, 120)
 
-	topRow := gtk.NewBox(gtk.OrientationHorizontal, 0)
-	
 	iconName := "network-server-symbolic"
 	if conn.Protocol == "ssh" || conn.Protocol == "sftp" {
 		iconName = "network-workgroup-symbolic"
