@@ -726,7 +726,7 @@ func (m *MainBox) setupActionsMenu(mainWindow *adw.ApplicationWindow, headerBar 
 	actionsBox.Append(createActionBtn("help-about-symbolic", "About", func() {
 		aboutDialog := adw.NewAboutWindow()
 		aboutDialog.SetApplicationName("Atilgan")
-		aboutDialog.SetVersion("0.1.0")
+		aboutDialog.SetVersion("0.2.0")
 		aboutDialog.SetApplicationIcon("atilgan_icon")
 		aboutDialog.SetCopyright("Copyright © 2025 MrSametBurgazoglu")
 		aboutDialog.SetWebsite("https://github.com/MrSametBurgazoglu/AtilganFileManager")

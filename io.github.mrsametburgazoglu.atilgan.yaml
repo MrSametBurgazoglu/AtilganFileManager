@@ -1,0 +1,34 @@
+app-id: io.github.mrsametburgazoglu.atilgan
+runtime: org.gnome.Platform
+runtime-version: "50"
+sdk: org.gnome.Sdk
+command: atilgan
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.golang
+
+finish-args:
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --filesystem=home
+
+build-options:
+  append-path: /usr/lib/sdk/golang/bin
+  env:
+    - GOROOT=/usr/lib/sdk/golang
+
+modules:
+  - name: atilgan
+    buildsystem: simple
+    build-options:
+      build-args:
+        - --share=network
+    build-commands:
+      - go build -o atilgan .
+      - install -D atilgan /app/bin/atilgan
+      - install -D io.github.mrsametburgazoglu.atilgan.desktop /app/share/applications/io.github.mrsametburgazoglu.atilgan.desktop
+      - install -D io.github.mrsametburgazoglu.atilgan.metainfo.xml /app/share/metainfo/io.github.mrsametburgazoglu.atilgan.metainfo.xml
+      - install -D atilgan_icon.svg /app/share/icons/hicolor/scalable/apps/io.github.mrsametburgazoglu.atilgan.svg
+    sources:
+      - type: dir
+        path: .
