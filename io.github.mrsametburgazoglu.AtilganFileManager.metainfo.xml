@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.mrsametburgazoglu.AtilganFileManager</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Atilgan</name>
+  <summary>A modern file manager</summary>
+  <developer_name>MrSametBurgazoglu</developer_name>
+  <url type="homepage">https://github.com/MrSametBurgazoglu/AtilganFileManager</url>
+  <url type="vcs-browser">https://github.com/MrSametBurgazoglu/AtilganFileManager</url>
+  <description>
+    <p>Atilgan is a modern file manager designed for efficiency and ease of use.</p>
+  </description>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Main window of Atilgan FileManager</caption>
+      <image>https://raw.githubusercontent.com/MrSametBurgazoglu/AtilganFileManager/main/screenshots/screenshot.png</image>
+    </screenshot>
+  </screenshots>
+  <launchable type="desktop-id">io.github.mrsametburgazoglu.AtilganFileManager.desktop</launchable>
+  <releases>
+    <release version="0.2.0" date="2026-05-05"/>
+  </releases>
+  <content_rating type="oars-1.1"/>
+</component>

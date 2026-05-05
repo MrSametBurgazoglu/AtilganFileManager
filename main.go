@@ -502,7 +502,7 @@ func (m *MainBox) setupPanel(panel *viewer_panel.Panel) {
 }
 
 func main() {
-	app := adw.NewApplication("com.github.mrsametburgazoglu.atilgan", gio.ApplicationFlagsNone)
+	app := adw.NewApplication("io.github.mrsametburgazoglu.AtilganFileManager", gio.ApplicationFlagsNone)
 	app.ConnectActivate(func() {
 		activate(app)
 	})
@@ -536,7 +536,7 @@ func activate(app *adw.Application) {
 	if err == nil {
 		iconTheme.AddSearchPath(curDir)
 	}
-	window.SetIconName("atilgan_icon")
+	window.SetIconName("io.github.mrsametburgazoglu.AtilganFileManager")
 
 	headerBar := header.NewHeaderBar(window)
 	mainBox := NewMainBox(window, headerBar)
@@ -727,7 +727,7 @@ func (m *MainBox) setupActionsMenu(mainWindow *adw.ApplicationWindow, headerBar 
 		aboutDialog := adw.NewAboutWindow()
 		aboutDialog.SetApplicationName("Atilgan")
 		aboutDialog.SetVersion("0.2.0")
-		aboutDialog.SetApplicationIcon("atilgan_icon")
+		aboutDialog.SetApplicationIcon("io.github.mrsametburgazoglu.AtilganFileManager")
 		aboutDialog.SetCopyright("Copyright © 2025 MrSametBurgazoglu")
 		aboutDialog.SetWebsite("https://github.com/MrSametBurgazoglu/AtilganFileManager")
 		aboutDialog.SetTransientFor(&mainWindow.Window)

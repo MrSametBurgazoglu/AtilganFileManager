@@ -1,4 +1,4 @@
-app-id: io.github.mrsametburgazoglu.atilgan
+app-id: io.github.mrsametburgazoglu.AtilganFileManager
 runtime: org.gnome.Platform
 runtime-version: "50"
 sdk: org.gnome.Sdk
@@ -10,6 +10,7 @@ finish-args:
   - --share=network
   - --socket=wayland
   - --socket=fallback-x11
+  - --share=ipc
   - --filesystem=home
 
 build-options:
@@ -26,9 +27,9 @@ modules:
     build-commands:
       - go build -o atilgan .
       - install -D atilgan /app/bin/atilgan
-      - install -D io.github.mrsametburgazoglu.atilgan.desktop /app/share/applications/io.github.mrsametburgazoglu.atilgan.desktop
-      - install -D io.github.mrsametburgazoglu.atilgan.metainfo.xml /app/share/metainfo/io.github.mrsametburgazoglu.atilgan.metainfo.xml
-      - install -D atilgan_icon.svg /app/share/icons/hicolor/scalable/apps/io.github.mrsametburgazoglu.atilgan.svg
+      - install -D io.github.mrsametburgazoglu.AtilganFileManager.desktop /app/share/applications/io.github.mrsametburgazoglu.AtilganFileManager.desktop
+      - install -D io.github.mrsametburgazoglu.AtilganFileManager.metainfo.xml /app/share/metainfo/io.github.mrsametburgazoglu.AtilganFileManager.metainfo.xml
+      - install -D atilgan_icon.svg /app/share/icons/hicolor/scalable/apps/io.github.mrsametburgazoglu.AtilganFileManager.svg
     sources:
       - type: dir
         path: .
