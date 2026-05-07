@@ -2,6 +2,8 @@
 
 Atilgan is a fast, lightweight, and modern file manager for Linux, meticulously crafted using the Go programming language and the GTK4 toolkit. It offers a clean and intuitive interface that focuses on providing a seamless file navigation experience without unnecessary bloat.
 
+![Atilgan Screenshot](screenshots/screenshot.png)
+
 https://github.com/user-attachments/assets/6ec71452-fd24-41bd-aeb2-4b1af8bf5939
 
 ## Features
