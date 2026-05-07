@@ -72,7 +72,7 @@ func NewSidebar(pathChanged func(string), config *preferences.Config) *Sidebar {
 	sidebar.addLocationButton("folder-music-symbolic", "Music", music)
 	sidebar.addLocationButton("folder-videos-symbolic", "Videos", videos)
 	sidebar.addLocationButton("network-server-symbolic", "Network", "network://")
-	sidebar.addLocationButton("bookmark-symbolic", "Tags", "tags://")
+	sidebar.addLocationButton("user-bookmarks-symbolic", "Tags", "tags://")
 
 	return sidebar
 }

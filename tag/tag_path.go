@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/MrSametBurgazoglu/atilgan/fileops"
 	"github.com/MrSametBurgazoglu/atilgan/types"
 )
 
@@ -33,7 +34,7 @@ func (t *TagPath) GetItems() []*types.ListItem {
 			Path:  path,
 		}
 		if listItem.IsDir {
-			listItem.ItemCount = getDirItemCount(path)
+			listItem.ItemCount = fileops.GetDirItemCount(path)
 		} else {
 			listItem.Size = info.Size()
 		}
@@ -52,12 +53,4 @@ func (t *TagPath) GetParentPath() string {
 
 func (t *TagPath) GetName() string {
 	return t.tag
-}
-
-func getDirItemCount(dirPath string) int {
-	entries, err := os.ReadDir(dirPath)
-	if err != nil {
-		return 0
-	}
-	return len(entries)
 }

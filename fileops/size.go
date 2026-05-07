@@ -1,6 +1,9 @@
 package fileops
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 func GetFileSizeAsString(size int64) string {
 	if size < 1024 {
@@ -12,4 +15,13 @@ func GetFileSizeAsString(size int64) string {
 	} else {
 		return fmt.Sprintf("%.0f GB", float64(size)/(1024*1024*1024))
 	}
+}
+
+func GetDirItemCount(dirPath string) int {
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return 0
+	}
+
+	return len(entries)
 }

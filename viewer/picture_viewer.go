@@ -177,7 +177,7 @@ func (viewer *PictureViewer) Refresh() {
 
 		if listItem.IsDir {
 			listItem.Group = "Directories"
-			listItem.ItemCount = getDirItemCount(fullPath)
+			listItem.ItemCount = fileops.GetDirItemCount(fullPath)
 			directories = append(directories, listItem)
 		} else {
 			pictures = append(pictures, listItem)

@@ -483,7 +483,11 @@ func (fl *FileList) drawRow(cr *cairo.Context, idx int, item *types.ListItem, y 
 	sizeYOffset := fl.themeConfig.GetSizeTextYOffset(fl.rowHeight)
 	cr.MoveTo(float64(w)-100, float64(y)+sizeYOffset)
 	if item.IsDir {
-		cr.ShowText(fmt.Sprintf("%d item", item.ItemCount))
+		itemText := "items"
+		if item.ItemCount == 1 {
+			itemText = "item"
+		}
+		cr.ShowText(fmt.Sprintf("%d %s", item.ItemCount, itemText))
 	} else if item.Size > 0 {
 		cr.ShowText(fileops.GetFileSizeAsString(item.Size))
 	}

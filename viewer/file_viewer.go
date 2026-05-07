@@ -297,7 +297,7 @@ func (viewer *FileViewer) Refresh(newFilter bool) {
 			GitStatus: string(viewer.GitManager.GetStatus(fullPath)),
 		}
 		if listItem.IsDir {
-			listItem.ItemCount = getDirItemCount(fullPath)
+			listItem.ItemCount = fileops.GetDirItemCount(fullPath)
 		} else {
 			info, err := entry.Info()
 			if err == nil {
@@ -359,15 +359,6 @@ func (viewer *FileViewer) UpdateFilterPopover() {
 			filterGrid.Attach(checkButton, i%2, i/2, 1, 1)
 		}
 	}
-}
-
-func getDirItemCount(dirPath string) int {
-	entries, err := os.ReadDir(dirPath)
-	if err != nil {
-		return 0
-	}
-
-	return len(entries)
 }
 
 func (viewer *FileViewer) CleanCopyCutFiles() {

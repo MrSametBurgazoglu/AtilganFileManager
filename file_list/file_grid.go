@@ -592,7 +592,11 @@ func (fl *FileGrid) drawGridItem(cr *cairo.Context, idx int, item *types.ListIte
 	cr.SetFontSize(fl.themeConfig.Fonts.SizeTextSize)
 	var meta string
 	if item.IsDir {
-		meta = fmt.Sprintf("%d items", item.ItemCount)
+		itemText := "items"
+		if item.ItemCount == 1 {
+			itemText = "item"
+		}
+		meta = fmt.Sprintf("%d %s", item.ItemCount, itemText)
 	} else {
 		meta = fileops.GetFileSizeAsString(item.Size)
 	}

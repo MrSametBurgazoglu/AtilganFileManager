@@ -32,6 +32,9 @@ import (
 //go:embed style.css
 var styleCSS embed.FS
 
+//go:embed atilgan_icon.svg
+var atilganIcon []byte
+
 type MainBox struct {
 	*adw.NavigationSplitView
 	MainWindow     *adw.ApplicationWindow
@@ -166,39 +169,33 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar) 
 headerBar.PackStart(mainBox.Pathbar)
 
 previewToggle := gtk.NewToggleButton()
-	previewToggle.SetIconName("view-sidebar-end-panel-symbolic")
-	previewToggle.SetTooltipText("Toggle Preview")
-	previewToggle.AddCSSClass("flat")
-	previewToggle.SetActive(mainBox.Config.EnablePreviewPane)
-	previewToggle.ConnectToggled(func() {
-		mainBox.Config.EnablePreviewPane = previewToggle.Active()
-		mainBox.Config.Save()
-		mainBox.applyPreferences()
-	})
+previewToggle.SetIconName("sidebar-show-right-symbolic")
+previewToggle.SetTooltipText("Toggle Preview")
+previewToggle.AddCSSClass("flat")
+previewToggle.SetActive(mainBox.Config.EnablePreviewPane)
+previewToggle.ConnectToggled(func() {
+	mainBox.Config.EnablePreviewPane = previewToggle.Active()
+	mainBox.Config.Save()
+	mainBox.applyPreferences()
+})
 
-	hiddenToggle := gtk.NewToggleButton()
-	hiddenToggle.SetIconName("emblem-hidden-symbolic")
-	hiddenToggle.SetTooltipText("Toggle Hidden Files")
-	hiddenToggle.AddCSSClass("flat")
-	hiddenToggle.SetActive(mainBox.Config.ShowHidden)
-	hiddenToggle.ConnectToggled(func() {
-		mainBox.Config.ShowHidden = hiddenToggle.Active()
-		mainBox.Config.Save()
-		mainBox.applyPreferences()
-		mainBox.pathChanged(mainBox.Path)
-	})
-	hiddenToggle.ConnectToggled(func() {
-		mainBox.Config.ShowHidden = hiddenToggle.Active()
-		mainBox.Config.Save()
-		mainBox.applyPreferences()
-		mainBox.pathChanged(mainBox.Path)
-	})
+hiddenToggle := gtk.NewToggleButton()
+hiddenToggle.SetIconName("view-conceal-symbolic")
+hiddenToggle.SetTooltipText("Toggle Hidden Files")
+hiddenToggle.AddCSSClass("flat")
+hiddenToggle.SetActive(mainBox.Config.ShowHidden)
+hiddenToggle.ConnectToggled(func() {
+	mainBox.Config.ShowHidden = hiddenToggle.Active()
+	mainBox.Config.Save()
+	mainBox.applyPreferences()
+	mainBox.pathChanged(mainBox.Path)
+})
 
 	spacer := gtk.NewBox(gtk.OrientationHorizontal, 0)
 	spacer.SetHExpand(true)
 	mainBox.BottomBar.Append(spacer)
-	mainBox.BottomBar.Append(previewToggle)
 	mainBox.BottomBar.Append(hiddenToggle)
+	mainBox.BottomBar.Append(previewToggle)
 
 	workspaceWrapper := gtk.NewBox(gtk.OrientationVertical, 0)
 	workspaceWrapper.SetHExpand(true)
@@ -531,6 +528,8 @@ func activate(app *adw.Application) {
 	if err == nil {
 		exeDir := filepath.Dir(exePath)
 		iconTheme.AddSearchPath(exeDir)
+		// Add /app/share/icons for Flatpak
+		iconTheme.AddSearchPath(filepath.Join(filepath.Dir(exeDir), "share", "icons"))
 	}
 	curDir, err := os.Getwd()
 	if err == nil {
@@ -538,7 +537,7 @@ func activate(app *adw.Application) {
 	}
 	window.SetIconName("io.github.mrsametburgazoglu.AtilganFileManager")
 
-	headerBar := header.NewHeaderBar(window)
+	headerBar := header.NewHeaderBar(window, atilganIcon)
 	mainBox := NewMainBox(window, headerBar)
 	window.SetContent(mainBox)
 

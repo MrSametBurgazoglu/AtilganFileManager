@@ -76,7 +76,7 @@ func (viewer *VideoViewer) Refresh() {
 		}
 		if listItem.IsDir {
 			listItem.Group = "Directories"
-			listItem.ItemCount = getDirItemCount(fullPath)
+			listItem.ItemCount = fileops.GetDirItemCount(fullPath)
 		} else {
 			info, err := entry.Info()
 			if err == nil {

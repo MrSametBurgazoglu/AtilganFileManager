@@ -208,6 +208,9 @@ func (viewer *ImageDirPreviewer) Refresh() {
 				Group: group,
 				IsDir: entry.IsDir(),
 			}
+			if listItem.IsDir {
+				listItem.ItemCount = fileops.GetDirItemCount(fullPath)
+			}
 			info, err := entry.Info()
 			if err == nil {
 				listItem.Size = info.Size()

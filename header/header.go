@@ -2,6 +2,7 @@ package header
 
 import (
 	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
+	"github.com/diamondburned/gotk4/pkg/gdkpixbuf/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
 
@@ -13,7 +14,7 @@ type HeaderBar struct {
 	CircularProgressBar *CircularProgressBar
 }
 
-func NewHeaderBar(mainWindow *adw.ApplicationWindow) *HeaderBar {
+func NewHeaderBar(mainWindow *adw.ApplicationWindow, iconBytes []byte) *HeaderBar {
 	leftHeader := adw.NewHeaderBar()
 	leftHeader.AddCSSClass("left-header")
 	leftHeader.SetShowStartTitleButtons(true)
@@ -32,7 +33,21 @@ func NewHeaderBar(mainWindow *adw.ApplicationWindow) *HeaderBar {
 	// Set an empty widget to prevent the default window title from showing in the center
 	rightHeader.SetTitleWidget(gtk.NewBox(gtk.OrientationHorizontal, 0))
 
-	logo := gtk.NewImageFromIconName("io.github.mrsametburgazoglu.AtilganFileManager")
+	var logo *gtk.Image
+	loader := gdkpixbuf.NewPixbufLoader()
+	if loader != nil {
+		loader.Write(iconBytes)
+		loader.Close()
+		pixbuf := loader.Pixbuf()
+		if pixbuf != nil {
+			logo = gtk.NewImageFromPixbuf(pixbuf)
+		}
+	}
+
+	if logo == nil {
+		logo = gtk.NewImageFromIconName("io.github.mrsametburgazoglu.AtilganFileManager")
+	}
+
 	logo.SetPixelSize(24)
 	logo.SetMarginStart(6)
 	leftHeader.PackStart(logo)
