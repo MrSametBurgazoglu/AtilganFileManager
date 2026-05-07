@@ -81,3 +81,133 @@ func GetIconForFolder(folderPath string) string {
 	}
 	return "folder" // Default icon
 }
+
+var fileDescriptions = map[string]string{
+	".go":   "Go Source File",
+	".py":   "Python Script",
+	".js":   "JavaScript File",
+	".ts":   "TypeScript File",
+	".json": "JSON Data",
+	".md":   "Markdown Document",
+	".txt":  "Plain Text File",
+	".pdf":  "PDF Document",
+	".png":  "PNG Image",
+	".jpg":  "JPEG Image",
+	".jpeg": "JPEG Image",
+	".gif":  "GIF Image",
+	".svg":  "SVG Image",
+	".webp": "WebP Image",
+	".zip":  "ZIP Archive",
+	".gz":   "Gzip Archive",
+	".tar":  "Tar Archive",
+	".rar":  "RAR Archive",
+	".mp3":  "MP3 Audio",
+	".ogg":  "Ogg Audio",
+	".wav":  "WAV Audio",
+	".mp4":  "MP4 Video",
+	".mkv":  "Matroska Video",
+	".mov":  "QuickTime Video",
+	".avi":  "AVI Video",
+	".html": "HTML Document",
+	".css":  "CSS Stylesheet",
+	".sh":   "Shell Script",
+}
+
+func GetFileDescription(fileName string) string {
+	ext := strings.ToLower(filepath.Ext(fileName))
+	if desc, ok := fileDescriptions[ext]; ok {
+		return desc
+	}
+	if ext == "" {
+		return "Binary/Executable"
+	}
+	return strings.ToUpper(strings.TrimPrefix(ext, ".")) + " File"
+}
+
+func IsImage(fileName string) bool {
+	fileName = strings.ToLower(fileName)
+	return strings.HasSuffix(fileName, ".png") ||
+		strings.HasSuffix(fileName, ".jpg") ||
+		strings.HasSuffix(fileName, ".jpeg") ||
+		strings.HasSuffix(fileName, ".gif") ||
+		strings.HasSuffix(fileName, ".webp") ||
+		strings.HasSuffix(fileName, ".svg")
+}
+
+func IsText(fileName string) bool {
+	fileName = strings.ToLower(fileName)
+	return strings.HasSuffix(fileName, ".txt") ||
+		strings.HasSuffix(fileName, ".mod") ||
+		strings.HasSuffix(fileName, ".sum")
+}
+
+func IsVideo(fileName string) bool {
+	fileName = strings.ToLower(fileName)
+	return strings.HasSuffix(fileName, ".mp4") ||
+		strings.HasSuffix(fileName, ".mkv") ||
+		strings.HasSuffix(fileName, ".mov") ||
+		strings.HasSuffix(fileName, ".avi") ||
+		strings.HasSuffix(fileName, ".webm")
+}
+
+func IsMusic(fileName string) bool {
+	fileName = strings.ToLower(fileName)
+	return strings.HasSuffix(fileName, ".mp3") ||
+		strings.HasSuffix(fileName, ".ogg") ||
+		strings.HasSuffix(fileName, ".wav") ||
+		strings.HasSuffix(fileName, ".flac") ||
+		strings.HasSuffix(fileName, ".m4a")
+}
+
+func IsMedia(fileName string) bool {
+	return IsVideo(fileName) || IsMusic(fileName)
+}
+
+func GetVideosPath() string {
+	return videos
+}
+
+func GetPicturesPath() string {
+	return pictures
+}
+
+func GetMusicPath() string {
+	return music
+}
+
+func IsDocument(fileName string) bool {
+	fileName = strings.ToLower(fileName)
+	return strings.HasSuffix(fileName, ".pdf") ||
+		strings.HasSuffix(fileName, ".epub") ||
+		strings.HasSuffix(fileName, ".mobi") ||
+		strings.HasSuffix(fileName, ".docx") ||
+		strings.HasSuffix(fileName, ".xlsx") ||
+		strings.HasSuffix(fileName, ".pptx")
+}
+
+func IsCode(fileName string) bool {
+	fileName = strings.ToLower(fileName)
+	return strings.HasSuffix(fileName, ".go") ||
+		strings.HasSuffix(fileName, ".json") ||
+		strings.HasSuffix(fileName, ".yaml") ||
+		strings.HasSuffix(fileName, ".yml") ||
+		strings.HasSuffix(fileName, ".env") ||
+		strings.HasSuffix(fileName, "dockerfile") ||
+		strings.HasSuffix(fileName, ".js") ||
+		strings.HasSuffix(fileName, ".ts") ||
+		strings.HasSuffix(fileName, ".py") ||
+		strings.HasSuffix(fileName, ".java") ||
+		strings.HasSuffix(fileName, ".c") ||
+		strings.HasSuffix(fileName, ".cpp") ||
+		strings.HasSuffix(fileName, ".h") ||
+		strings.HasSuffix(fileName, ".hpp") ||
+		strings.HasSuffix(fileName, ".rs") ||
+		strings.HasSuffix(fileName, ".rb") ||
+		strings.HasSuffix(fileName, ".php") ||
+		strings.HasSuffix(fileName, ".swift") ||
+		strings.HasSuffix(fileName, ".kt") ||
+		strings.HasSuffix(fileName, ".kts") ||
+		strings.HasSuffix(fileName, ".sh") ||
+		strings.HasSuffix(fileName, ".bat") ||
+		strings.HasSuffix(fileName, ".md")
+}

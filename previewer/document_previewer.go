@@ -40,7 +40,7 @@ func NewDocumentPreviewer() *DocumentPreviewer {
 
 	placeholder := gtk.NewBox(gtk.OrientationVertical, 0)
 	thumbnail := gtk.NewImageFromIconName("text-x-generic-symbolic")
-	thumbnail.SetPixelSize(256)
+	thumbnail.SetPixelSize(144)
 	placeholder.Append(thumbnail)
 	spinner := gtk.NewSpinner()
 	placeholder.Append(spinner)

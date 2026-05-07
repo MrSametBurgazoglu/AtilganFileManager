@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func Copy(sourcePath, destinationDir string) error {
@@ -62,6 +63,11 @@ func CopyFiles(sourcePaths []string, destinationDir string, progress func(float6
 	for i, sourcePath := range sourcePaths {
 		baseName := filepath.Base(sourcePath)
 		destinationPath := filepath.Join(destinationDir, baseName)
+		
+		// Conflict resolution: rename if destination exists
+		if _, err := os.Stat(destinationPath); err == nil {
+			destinationPath = GetUniquePath(destinationPath)
+		}
 
 		if err := Copy(sourcePath, destinationPath); err != nil {
 			errors = append(errors, fmt.Errorf("error copying %s: %w", sourcePath, err))
@@ -74,23 +80,50 @@ func CopyFiles(sourcePaths []string, destinationDir string, progress func(float6
 	return errors
 }
 
-func CutFiles(sourcePaths []string, destinationDir string) []error {
+func CutFiles(sourcePaths []string, destinationDir string, progress func(float64)) []error {
 	var errors []error
 
 	if err := os.MkdirAll(destinationDir, 0755); err != nil {
 		return append(errors, fmt.Errorf("failed to create destination directory %s: %w", destinationDir, err))
 	}
 
-	for _, sourcePath := range sourcePaths {
+	for i, sourcePath := range sourcePaths {
 		fileName := filepath.Base(sourcePath)
 		destinationPath := filepath.Join(destinationDir, fileName)
+
+		// Conflict resolution: rename if destination exists
+		if _, err := os.Stat(destinationPath); err == nil {
+			destinationPath = GetUniquePath(destinationPath)
+		}
 
 		if err := os.Rename(sourcePath, destinationPath); err != nil {
 			errors = append(errors, fmt.Errorf("error cutting %s: %w", sourcePath, err))
 		}
+		if progress != nil {
+			progress(float64(i+1) / float64(len(sourcePaths)))
+		}
 	}
 
 	return errors
+}
+
+func GetUniquePath(path string) string {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return path
+	}
+
+	ext := filepath.Ext(path)
+	base := strings.TrimSuffix(path, ext)
+
+	for i := 1; ; i++ {
+		newPath := fmt.Sprintf("%s (%d)%s", base, i, ext)
+		if _, err := os.Stat(newPath); os.IsNotExist(err) {
+			return newPath
+		}
+		if i > 1000 { // Safety break
+			return path
+		}
+	}
 }
 
 func copySingleFile(sourcePath, destinationPath string) error {

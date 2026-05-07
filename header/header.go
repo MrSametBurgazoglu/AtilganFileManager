@@ -1,55 +1,74 @@
 package header
 
 import (
+	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
+	"github.com/diamondburned/gotk4/pkg/gdkpixbuf/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
 
 type HeaderBar struct {
-	*gtk.HeaderBar
-	ShortcutsButton      *gtk.Button
-	SearchButton         *gtk.Button
-	PreviewerPanelButton *gtk.Button
-	CircularProgressBar  *CircularProgressBar
+	LeftHeader          *adw.HeaderBar
+	RightHeader         *adw.HeaderBar
+	ActionsButton       *gtk.MenuButton
+	SearchButton        *gtk.Button
+	CircularProgressBar *CircularProgressBar
 }
 
-func NewHeaderBar(mainWindow *gtk.ApplicationWindow) *HeaderBar {
-	headerBar := gtk.NewHeaderBar()
-	headerBar.AddCSSClass("headerbar")
+func NewHeaderBar(mainWindow *adw.ApplicationWindow, iconBytes []byte) *HeaderBar {
+	leftHeader := adw.NewHeaderBar()
+	leftHeader.AddCSSClass("left-header")
+	leftHeader.SetShowStartTitleButtons(true)
+	leftHeader.SetShowEndTitleButtons(false)
 
-	atilganIcon := gtk.NewImageFromIconName("atilgan_icon")
-	atilganIcon.SetPixelSize(32)
+	rightHeader := adw.NewHeaderBar()
+	rightHeader.AddCSSClass("right-header")
+	rightHeader.SetShowStartTitleButtons(false)
+	rightHeader.SetShowEndTitleButtons(true)
+
+	// Sync heights of the two headers
+	sizeGroup := gtk.NewSizeGroup(gtk.SizeGroupVertical)
+	sizeGroup.AddWidget(leftHeader)
+	sizeGroup.AddWidget(rightHeader)
+
+	// Set an empty widget to prevent the default window title from showing in the center
+	rightHeader.SetTitleWidget(gtk.NewBox(gtk.OrientationHorizontal, 0))
+
+	var logo *gtk.Image
+	loader := gdkpixbuf.NewPixbufLoader()
+	if loader != nil {
+		loader.Write(iconBytes)
+		loader.Close()
+		pixbuf := loader.Pixbuf()
+		if pixbuf != nil {
+			logo = gtk.NewImageFromPixbuf(pixbuf)
+		}
+	}
+
+	if logo == nil {
+		logo = gtk.NewImageFromIconName("io.github.mrsametburgazoglu.AtilganFileManager")
+	}
+
+	logo.SetPixelSize(24)
+	logo.SetMarginStart(6)
+	leftHeader.PackStart(logo)
+
+	actionsButton := gtk.NewMenuButton()
+	actionsButton.SetIconName("open-menu-symbolic")
+	leftHeader.PackEnd(actionsButton)
 
 	searchButton := gtk.NewButtonFromIconName("system-search-symbolic")
-	headerBar.PackStart(searchButton)
+	rightHeader.PackStart(searchButton)
 
 	circularProgressBar := NewCircularProgressBar()
 	circularProgressBar.SetVisible(false)
-	headerBar.PackStart(circularProgressBar)
-
-	aboutButton := gtk.NewButtonFromIconName("help-about-symbolic")
-	aboutButton.ConnectClicked(func() {
-		aboutDialog := gtk.NewAboutDialog()
-		aboutDialog.SetProgramName("Atilgan")
-		aboutDialog.SetVersion("0.1.0")
-		aboutDialog.SetLogoIconName("atilgan_icon")
-		aboutDialog.SetCopyright("Copyright © 2025 MrSametBurgazoglu")
-		aboutDialog.SetWebsite("https://github.com/MrSametBurgazoglu/AtilganFileManager")
-		aboutDialog.SetVisible(true)
-	})
-	headerBar.PackEnd(aboutButton)
-
-	shortcutsButton := gtk.NewButtonFromIconName("preferences-desktop-keyboard-shortcuts-symbolic")
-	headerBar.PackEnd(shortcutsButton)
-
-	previewerPanelButton := gtk.NewButtonFromIconName("view-reveal-symbolic")
-	headerBar.PackEnd(previewerPanelButton)
+	rightHeader.PackStart(circularProgressBar)
 
 	return &HeaderBar{
-		HeaderBar:            headerBar,
-		ShortcutsButton:      shortcutsButton,
-		SearchButton:         searchButton,
-		CircularProgressBar:  circularProgressBar,
-		PreviewerPanelButton: previewerPanelButton,
+		LeftHeader:          leftHeader,
+		RightHeader:         rightHeader,
+		ActionsButton:       actionsButton,
+		SearchButton:        searchButton,
+		CircularProgressBar: circularProgressBar,
 	}
 }
 
@@ -63,4 +82,28 @@ func (h *HeaderBar) HideProgress() {
 
 func (h *HeaderBar) SetProgress(fraction float64) {
 	h.CircularProgressBar.SetFraction(fraction)
+}
+
+func (h *HeaderBar) SetTitleWidget(widget gtk.Widgetter) {
+	h.RightHeader.SetTitleWidget(widget)
+}
+
+func (h *HeaderBar) Remove(widget gtk.Widgetter) {
+	h.LeftHeader.Remove(widget)
+}
+
+func (h *HeaderBar) PackStart(widget gtk.Widgetter) {
+	h.RightHeader.PackStart(widget)
+}
+
+func (h *HeaderBar) PackStartLeft(widget gtk.Widgetter) {
+	h.LeftHeader.PackStart(widget)
+}
+
+func (h *HeaderBar) PackStartRight(widget gtk.Widgetter) {
+	h.RightHeader.PackStart(widget)
+}
+
+func (h *HeaderBar) PackEndLeft(widget gtk.Widgetter) {
+	h.LeftHeader.PackEnd(widget)
 }

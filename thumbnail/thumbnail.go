@@ -19,16 +19,22 @@ func Generate(filePath string) (*gdk.Texture, error) {
 		return nil, err
 	}
 
-	if _, err := os.Stat(thumbnailPath); os.IsNotExist(err) {
-		return nil, errors.New("thumbnail not found")
+	if _, err := os.Stat(thumbnailPath); err == nil {
+		pixbuf, err := gdk.NewTextureFromFilename(thumbnailPath)
+		if err == nil {
+			return pixbuf, nil
+		}
 	}
 
-	pixbuf, err := gdk.NewTextureFromFilename(thumbnailPath)
-	if err != nil {
-		return nil, err
+	// Fallback for SVG files: try to load directly
+	if strings.HasSuffix(strings.ToLower(filePath), ".svg") {
+		pixbuf, err := gdk.NewTextureFromFilename(filePath)
+		if err == nil {
+			return pixbuf, nil
+		}
 	}
 
-	return pixbuf, nil
+	return nil, errors.New("thumbnail not found")
 }
 
 func getThumbnailPath(filePath string, size string) (string, error) {

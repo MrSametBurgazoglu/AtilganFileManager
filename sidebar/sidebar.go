@@ -5,26 +5,50 @@ import (
 	"os/user"
 	"runtime"
 
+	"github.com/MrSametBurgazoglu/atilgan/devices"
+	"github.com/MrSametBurgazoglu/atilgan/preferences"
 	"github.com/adrg/xdg"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
 
 type Sidebar struct {
 	*gtk.Box
-	buttons     map[string]*gtk.Button
-	currentPath string
+	locationsBox *gtk.Box
+	pinsBox      *gtk.Box
+	devicesBox   *devices.DeviceManager
+	buttons      map[string]*gtk.Button
+	currentPath  string
+	pathChanged  func(string)
+	OnNewTab     func()
+	OnPreferences func()
+	OnToggleHidden func(bool)
 }
 
-func NewSidebar(pathChanged func(string)) *Sidebar {
-	box := gtk.NewBox(gtk.OrientationHorizontal, 6)
-	box.SetHExpand(false)
-	box.SetHAlign(gtk.AlignCenter)
+func NewSidebar(pathChanged func(string), config *preferences.Config) *Sidebar {
+	box := gtk.NewBox(gtk.OrientationVertical, 2)
 	box.AddCSSClass("sidebar")
 
 	sidebar := &Sidebar{
-		Box:     box,
-		buttons: make(map[string]*gtk.Button),
+		Box:          box,
+		locationsBox: gtk.NewBox(gtk.OrientationVertical, 2),
+		pinsBox:      gtk.NewBox(gtk.OrientationVertical, 2),
+		devicesBox:   devices.NewDeviceManager(pathChanged),
+		buttons:      make(map[string]*gtk.Button),
+		pathChanged:  pathChanged,
 	}
+
+	box.Append(sidebar.locationsBox)
+
+	box.Append(gtk.NewSeparator(gtk.OrientationHorizontal))
+
+	pinsLabel := gtk.NewLabel("Bookmarks")
+	pinsLabel.AddCSSClass("caption")
+	pinsLabel.SetHAlign(gtk.AlignStart)
+	pinsLabel.SetMarginStart(12)
+	box.Append(pinsLabel)
+	box.Append(sidebar.pinsBox)
+
+	box.Append(sidebar.devicesBox)
 
 	homeDir, err := getHomeDir()
 	if err != nil {
@@ -38,105 +62,62 @@ func NewSidebar(pathChanged func(string)) *Sidebar {
 	music := xdg.UserDirs.Music
 	videos := xdg.UserDirs.Videos
 
-	homeButton := gtk.NewButtonFromIconName("user-home-symbolic")
-	homeButton.AddCSSClass("sidebar-button")
-	homeButton.SetTooltipText("home")
-	sidebar.buttons[homeDir] = homeButton
-
-	recentButton := gtk.NewButtonFromIconName("document-open-recent-symbolic")
-	recentButton.AddCSSClass("sidebar-button")
-	recentButton.SetTooltipText("recent")
-	sidebar.buttons["recent://"] = recentButton
-
-	tagsButton := gtk.NewButtonFromIconName("tag-symbolic")
-	tagsButton.AddCSSClass("sidebar-button")
-	tagsButton.SetTooltipText("tags")
-	sidebar.buttons["tags://"] = tagsButton
-
-	trashButton := gtk.NewButtonFromIconName("user-trash-symbolic")
-	trashButton.AddCSSClass("sidebar-button")
-	trashButton.SetTooltipText("trash")
-	sidebar.buttons["trash://"] = trashButton
-
-	desktopButton := gtk.NewButtonFromIconName("user-desktop-symbolic")
-	desktopButton.AddCSSClass("sidebar-button")
-	desktopButton.SetTooltipText("desktop")
-	sidebar.buttons[desktop] = desktopButton
-
-	downloadsButton := gtk.NewButtonFromIconName("folder-download-symbolic")
-	downloadsButton.AddCSSClass("sidebar-button")
-	downloadsButton.SetTooltipText("downloads")
-	sidebar.buttons[downloads] = downloadsButton
-
-	documentsButton := gtk.NewButtonFromIconName("folder-documents-symbolic")
-	documentsButton.AddCSSClass("sidebar-button")
-	documentsButton.SetTooltipText("documents")
-	sidebar.buttons[documents] = documentsButton
-
-	picturesButton := gtk.NewButtonFromIconName("folder-pictures-symbolic")
-	picturesButton.AddCSSClass("sidebar-button")
-	picturesButton.SetTooltipText("pictures")
-	sidebar.buttons[pictures] = picturesButton
-
-	musicButton := gtk.NewButtonFromIconName("folder-music-symbolic")
-	musicButton.AddCSSClass("sidebar-button")
-	musicButton.SetTooltipText("music")
-	sidebar.buttons[music] = musicButton
-
-	videosButton := gtk.NewButtonFromIconName("folder-videos-symbolic")
-	videosButton.AddCSSClass("sidebar-button")
-	videosButton.SetTooltipText("videos")
-	sidebar.buttons[videos] = videosButton
-
-	if homeDir != "" {
-		box.Append(homeButton)
-	}
-	box.Append(recentButton)
-	box.Append(trashButton)
-	box.Append(desktopButton)
-	box.Append(downloadsButton)
-	box.Append(documentsButton)
-	box.Append(picturesButton)
-	box.Append(musicButton)
-	box.Append(videosButton)
-	box.Append(tagsButton)
-
-	homeButton.ConnectClicked(func() {
-		pathChanged(homeDir)
-	})
-
-	recentButton.ConnectClicked(func() {
-		pathChanged("recent://")
-	})
-
-	tagsButton.ConnectClicked(func() {
-		pathChanged("tags://")
-	})
-
-	trashButton.ConnectClicked(func() {
-		pathChanged("trash://")
-	})
-
-	desktopButton.ConnectClicked(func() {
-		pathChanged(desktop)
-	})
-	downloadsButton.ConnectClicked(func() {
-		pathChanged(downloads)
-	})
-	documentsButton.ConnectClicked(func() {
-		pathChanged(documents)
-	})
-	picturesButton.ConnectClicked(func() {
-		pathChanged(pictures)
-	})
-	musicButton.ConnectClicked(func() {
-		pathChanged(music)
-	})
-	videosButton.ConnectClicked(func() {
-		pathChanged(videos)
-	})
+	sidebar.addLocationButton("user-home-symbolic", "Home", homeDir)
+	sidebar.addLocationButton("document-open-recent-symbolic", "Recent", "recent://")
+	sidebar.addLocationButton("user-trash-symbolic", "Trash", "trash://")
+	sidebar.addLocationButton("user-desktop-symbolic", "Desktop", desktop)
+	sidebar.addLocationButton("folder-download-symbolic", "Downloads", downloads)
+	sidebar.addLocationButton("folder-documents-symbolic", "Documents", documents)
+	sidebar.addLocationButton("folder-pictures-symbolic", "Pictures", pictures)
+	sidebar.addLocationButton("folder-music-symbolic", "Music", music)
+	sidebar.addLocationButton("folder-videos-symbolic", "Videos", videos)
+	sidebar.addLocationButton("network-server-symbolic", "Network", "network://")
+	sidebar.addLocationButton("user-bookmarks-symbolic", "Tags", "tags://")
 
 	return sidebar
+}
+
+func (s *Sidebar) addLocationButton(iconName, labelText, path string) {
+	if path == "" {
+		return
+	}
+	btn := s.createButton(iconName, labelText, path)
+	s.locationsBox.Append(btn)
+	s.buttons[path] = btn
+}
+
+func (s *Sidebar) AddPin(path string) {
+	if _, ok := s.buttons[path]; ok {
+		return
+	}
+	btn := s.createButton("folder-symbolic", path, path)
+	s.pinsBox.Append(btn)
+	s.buttons[path] = btn
+}
+
+func (s *Sidebar) createButton(iconName, labelText, path string) *gtk.Button {
+	btn := gtk.NewButton()
+
+	box := gtk.NewBox(gtk.OrientationHorizontal, 8)
+	box.SetHAlign(gtk.AlignStart)
+
+	icon := gtk.NewImageFromIconName(iconName)
+	label := gtk.NewLabel(labelText)
+
+	box.Append(icon)
+	box.Append(label)
+
+	btn.SetChild(box)
+	btn.AddCSSClass("sidebar-button")
+	btn.SetHAlign(gtk.AlignFill)
+
+	if path != "" {
+		btn.ConnectClicked(func() {
+			s.pathChanged(path)
+		})
+	}
+
+	return btn
 }
 
 func (s *Sidebar) SetPath(path string) {
@@ -148,6 +129,7 @@ func (s *Sidebar) SetPath(path string) {
 			button.RemoveCSSClass("selected")
 		}
 	}
+	s.devicesBox.SetPath(path)
 }
 
 func getHomeDir() (string, error) {

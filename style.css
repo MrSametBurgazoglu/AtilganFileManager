@@ -1,151 +1,450 @@
+/* Adwaita Styling */
+
 window {
-    background-color: #2d2d2d;
-    color: #f5f5f5;
+    background-color: @window_bg_color;
+    color: @window_fg_color;
 }
 
-headerbar {
-    background-color: #242424;
-    border-bottom: 1px solid #404040;
+headerbar, .headerbar {
+    background-color: @headerbar_bg_color;
+    color: @headerbar_fg_color;
+    background-image: none;
+    border-bottom: none;
+    padding: 0;
+    min-height: 40px;
 }
 
-.path-bar {
-    padding: 6px;
+.left-header {
+    background-color: @headerbar_bg_color;
+    border-bottom: none;
 }
 
-.path-bar button {
-    background: none;
+.right-header {
+    background-color: @headerbar_bg_color;
+    border-bottom: none;
+}
+
+.header-separator {
+    background-color: @borders;
+    min-width: 1px;
+}
+
+.header-container {
+    background-color: @headerbar_bg_color;
+}
+
+/* Global Button & MenuButton resets for transparency */
+button, 
+menubutton {
+    background-color: transparent;
+    color: inherit;
     border: none;
     box-shadow: none;
+    background-image: none;
     padding: 6px;
-    border-radius: 4px;
+    transition: background-color 0.2s;
 }
 
-.path-bar button:hover {
-    background-color: #404040;
+button:hover,
+menubutton:hover {
+    background-color: alpha(currentColor, 0.08);
 }
 
-.path-bar button:checked {
-    background-color: #353535;
-    border-radius: 1px solid;
+button:active,
+menubutton:active {
+    background-color: alpha(currentColor, 0.15);
 }
 
-.path-separator {
-    padding-left: 6px;
-    padding-right: 6px;
-    color: #aaa;
+button:backdrop,
+menubutton:backdrop {
+    background-color: transparent;
+    color: alpha(currentColor, 0.6);
 }
 
-.search-entry {
-    background-color: #404040;
-    color: #f5f5f5;
-    border-radius: 5px;
-    padding: 6px 12px;
-    border: 1px solid #505050;
+/* Rounded corners for everything */
+button, 
+menubutton,
+entry, 
+popover > box, 
+.sidebar-button {
+    border-radius: 8px;
 }
 
-.search-entry:focus {
-    border-color: #707070;
-}
-
-button {
-    background: none;
-    color: #f5f5f5;
-    padding: 6px 12px;
-    border: none;
-    box-shadow: none;
-    transition:
-        background-color 0.3s,
-        box-shadow 0.3s;
-}
-
-button:hover {
-    background-color: #505050;
-}
-
-button:active {
-    background-color: #353535;
-}
-
-separator {
-    background-color: #555;
-}
-
-scrollbar {
-    background-color: #2d2d2d;
-}
-
-scrollbar slider {
-    background-color: #404040;
-    border-radius: 3px;
-    min-width: 6px;
-    min-height: 6px;
-}
-
-scrollbar slider:hover {
-    background-color: #505050;
-}
-
-.sidebar {
+.path-bar-container,
+.path-bar-container scrolledwindow {
     background-color: transparent;
 }
 
-.sidebar .sidebar-button {
-    background: none;
+.path-bar {
+    background-color: transparent;
+    padding: 2px 8px;
+    margin: 0;
+    border-radius: 8px;
     border: none;
-    box-shadow: none;
 }
 
-.sidebar .sidebar-button:hover {
-    background-color: #404040;
+.path-bar button {
+    padding: 4px 10px;
+    color: alpha(currentColor, 0.8);
+    border-radius: 8px;
 }
 
-.sidebar .sidebar-button.selected {
-    background-color: #505050;
+.path-bar button label {
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.path-bar button:checked, .path-bar button.selected {
+    background-color: @accent_bg_color;
+    color: @accent_fg_color;
+}
+
+.path-separator {
+    color: alpha(currentColor, 0.4);
+    margin: 0 4px;
+}
+
+.search-entry {
+    background-color: @view_bg_color;
+    color: @view_fg_color;
+    border: 1px solid @borders;
+    padding: 6px 12px;
+}
+
+.search-entry:focus {
+    border-color: @accent_bg_color;
+}
+
+/* Network Viewer Styling */
+.network-viewer {
+    background-color: @window_bg_color;
+}
+
+.network-card {
+    background-color: @card_bg_color;
+    color: @card_fg_color;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid @borders;
+    transition: all 200ms ease-in-out;
+}
+
+.network-card:hover {
+    background-color: alpha(@accent_bg_color, 0.1);
+    border-color: @accent_bg_color;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.network-card-title {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.network-card-subtitle {
+    font-size: 0.9em;
+    color: alpha(currentColor, 0.7);
+}
+
+.network-form-card {
+    background-color: @card_bg_color;
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid @borders;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.network-connect-button {
+    padding: 10px 24px;
+    font-weight: bold;
+    border-radius: 8px;
+    margin-top: 12px;
+}
+
+.network-section-title {
+    font-weight: 800;
+    font-size: 1.4em;
+    margin-bottom: 16px;
+    color: @accent_bg_color;
+}
+
+.network-remove-button {
+    border-radius: 20px;
+    padding: 4px;
+    min-width: 32px;
+    min-height: 32px;
+    color: @error_color;
+}
+
+.network-remove-button:hover {
+    background-color: @error_color;
+    color: @error_fg_color;
+}
+
+/* Sidebar styling */
+.sidebar {
+    background-color: @window_bg_color;
+    padding: 4px;
+}
+
+.sidebar-header {
+    font-size: 0.8em;
+    font-weight: bold;
+    color: alpha(currentColor, 0.5);
+    margin-top: 12px;
+    margin-bottom: 4px;
+    margin-left: 12px;
+    text-transform: uppercase;
+}
+
+.sidebar-row {
+    margin-bottom: 1px;
+}
+
+.sidebar-eject-button {
+    padding: 4px 8px;
+    color: alpha(currentColor, 0.5);
+    opacity: 0.6;
+}
+
+.sidebar-eject-button:hover {
+    color: @error_color;
+    opacity: 1.0;
+}
+
+.sidebar-button {
+    padding: 4px 8px;
+    margin-bottom: 1px;
+    color: inherit;
+    min-height: 30px;
+}
+
+.sidebar-button.selected {
+    background-color: @accent_bg_color;
+    color: @accent_fg_color;
+}
+
+/* Paned handles */
+paned > separator {
+    background-color: @borders;
+    min-width: 1px;
+    min-height: 1px;
+}
+
+/* Scrolled window */
+scrolledwindow {
+    background-color: @window_bg_color;
+}
+
+/* Custom drawing areas usually don't use CSS for their internal content, 
+   but we can style the container */
+.file-list-container {
+    background-color: @view_bg_color;
 }
 
 .preview-panel {
-    background-color: #242424;
-    padding: 12px;
+    background-color: @window_bg_color;
+    padding: 8px;
 }
 
 .dir-previewer-header {
-    padding: 3px;
-    border-bottom: 1px solid #404040;
+    background-color: @card_bg_color;
+    border-radius: 8px;
+    padding: 6px 10px;
+    margin-bottom: 2px;
+    border: 1px solid @borders;
 }
 
-popover > box {
-    padding: 12px;
-    background-color: #242424;
+.dir-previewer-title {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: @window_fg_color;
 }
 
-.preview-label {
-    font-size: 16px;
+.preview-grid-item {
     padding: 10px;
+    border-radius: 8px;
 }
 
-headerbar > .titlebar-right > .titlebutton,
-headerbar > .titlebar-left > .titlebutton {
-    background: none;
+.preview-grid-item label {
+    font-size: 0.9em;
+    color: alpha(currentColor, 0.8);
+}
+
+.viewer-panel {
+    background-color: @window_bg_color;
+    padding: 0px;
+}
+
+scrollbar slider {
+    background-color: alpha(currentColor, 0.2);
+    border-radius: 4px;
+}
+
+scrollbar slider:hover {
+    background-color: alpha(currentColor, 0.3);
+}
+
+popover > contents,
+popover > box {
+    background-color: @popover_bg_color;
+    color: @popover_fg_color;
+    border: 1px solid @borders;
+    padding: 8px;
+}
+
+button.flat {
+    background-color: transparent;
     border: none;
     box-shadow: none;
 }
 
-headerbar > .titlebar-right > .titlebutton:hover,
-headerbar > .titlebar-left > .titlebutton:hover {
-    background-color: #404040;
-}
-
 .preview-info-box {
-    font-size: 16px;
-    border: 2px solid #404040;
-    border-radius: 5px;
-    background-color: #2d2d2d;
+    background-color: @card_bg_color;
+    border-radius: 12px;
+    border: 1px solid @borders;
+    padding: 16px;
+    margin-top: 8px;
 }
 
-.preview-info-item {
-    padding: 2px;
+.preview-title {
+    font-size: 1.4em;
+    font-weight: bold;
+    color: inherit;
+    margin-bottom: 8px;
 }
 
-.preview-info-item:hover {
-    border-color: #505050;
+.preview-label-title {
+    font-size: 0.95em;
+    color: alpha(currentColor, 0.7);
+}
+
+.preview-label-value {
+    font-size: 0.95em;
+    color: @accent_bg_color;
+    font-weight: 500;
+}
+
+/* Dialog & Creation Styles */
+.title-4 {
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.caption {
+    font-size: 0.85em;
+    color: alpha(currentColor, 0.6);
+    margin-bottom: 2px;
+}
+
+.view {
+    background-color: @view_bg_color;
+    color: @view_fg_color;
+    border-radius: 8px;
+    border: 1px solid @borders;
+}
+
+.view label {
+    color: inherit;
+}
+
+entry.error {
+    border-color: @error_color;
+    color: @error_color;
+}
+
+entry.error:focus {
+    border-color: @error_color;
+    outline-color: alpha(@error_color, 0.3);
+}
+
+button.suggested-action {
+    background-color: @accent_bg_color;
+    color: @accent_fg_color;
+    font-weight: bold;
+}
+
+button.suggested-action:hover {
+    background-color: alpha(@accent_bg_color, 0.8);
+}
+
+button.suggested-action:disabled {
+    background-color: alpha(currentColor, 0.1);
+    color: alpha(currentColor, 0.4);
+}
+
+entry {
+    background-color: @view_bg_color;
+    color: @view_fg_color;
+    border: 1px solid @borders;
+    padding: 8px 12px;
+    transition: all 0.2s;
+}
+
+entry:focus {
+    border-color: @accent_bg_color;
+}
+
+/* Network Viewer Styling */
+.network-viewer {
+    background-color: @window_bg_color;
+}
+
+.network-card {
+    background-color: @card_bg_color;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid @borders;
+    transition: all 200ms ease-in-out;
+}
+
+.network-card:hover {
+    background-color: alpha(@accent_bg_color, 0.1);
+    border-color: @accent_bg_color;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.network-card-title {
+    font-weight: bold;
+    font-size: 1.1em;
+    color: @window_fg_color;
+}
+
+.network-card-subtitle {
+    font-size: 0.9em;
+    color: alpha(@window_fg_color, 0.7);
+}
+
+.network-form-card {
+    background-color: @headerbar_bg_color;
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid @borders;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.network-connect-button {
+    padding: 10px 24px;
+    font-weight: bold;
+    border-radius: 8px;
+    margin-top: 12px;
+}
+
+.network-section-title {
+    font-weight: 800;
+    font-size: 1.4em;
+    margin-bottom: 16px;
+    color: @accent_bg_color;
+}
+
+.network-remove-button {
+    border-radius: 20px;
+    padding: 4px;
+    min-width: 32px;
+    min-height: 32px;
+    color: @error_color;
+}
+
+.network-remove-button:hover {
+    background-color: @error_color;
+    color: @error_fg_color;
 }

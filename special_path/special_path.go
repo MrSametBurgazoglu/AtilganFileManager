@@ -3,6 +3,7 @@ package special_path
 import (
 	"strings"
 
+	"github.com/MrSametBurgazoglu/atilgan/network"
 	"github.com/MrSametBurgazoglu/atilgan/recent"
 	"github.com/MrSametBurgazoglu/atilgan/tag"
 	"github.com/MrSametBurgazoglu/atilgan/trash"
@@ -26,9 +27,10 @@ func NewSpecialPathManager() (*SpecialPathManager, error) {
 	}
 	return &SpecialPathManager{
 		Paths: map[string]IPath{
-			"trash":  trash.NewTrash(),
-			"tags":   tag.NewTagsPath(tagManager),
-			"recent": recent.NewRecentPath(recentManager),
+			"trash":   trash.NewTrash(),
+			"tags":    tag.NewTagsPath(tagManager),
+			"recent":  recent.NewRecentPath(recentManager),
+			"network": network.NewNetwork(),
 		},
 		tagManager:    tagManager,
 		recentManager: recentManager,
@@ -48,6 +50,15 @@ func (spm *SpecialPathManager) GetPath(path string) IPath {
 	}
 	if strings.HasPrefix(path, "recent://") {
 		return spm.Paths["recent"]
+	}
+	if strings.HasPrefix(path, "network://") {
+		return spm.Paths["network"]
+	}
+	if strings.Contains(path, "://") {
+		protocol := strings.Split(path, "://")[0]
+		if protocol == "ftp" || protocol == "smb" || protocol == "sftp" {
+			return network.NewRemotePath(path)
+		}
 	}
 	return nil
 }

@@ -46,7 +46,7 @@ func (p *CircularProgressBar) draw(area *gtk.DrawingArea, cr *cairo.Context, wid
 
 	percentage := int(p.fraction * 100)
 	text := fmt.Sprintf("%d%%", percentage)
-	cr.SetSourceRGBA(0.1, 0.1, 0.1, 1.0)
+	cr.SetSourceRGBA(0.9, 0.9, 0.9, 1.0)
 	cr.SelectFontFace("sans-serif", cairo.FontSlantNormal, cairo.FontWeightBold)
 	cr.SetFontSize(12.0)
 

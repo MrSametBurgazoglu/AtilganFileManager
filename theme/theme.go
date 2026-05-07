@@ -18,9 +18,9 @@ type SpacingConfig struct {
 func NewTheme() *SpacingConfig {
 	return &SpacingConfig{
 		Fonts: FontConfig{
-			HeaderSize:   10,
-			FilenameSize: 14,
-			SizeTextSize: 11,
+			HeaderSize:   11,
+			FilenameSize: 13,
+			SizeTextSize: 10,
 		},
 	}
 }
@@ -58,18 +58,20 @@ type ColorTheme struct {
 	HeaderTextColor       gdk.RGBA
 	CopyCutBgColor        gdk.RGBA
 	HoverBgColor          gdk.RGBA
+	AccentColor           gdk.RGBA
 }
 
-// NewColorTheme creates a new color theme with default dark colors
+// NewColorTheme creates a new color theme with Adwaita-compatible defaults
 func NewColorTheme() *ColorTheme {
 	return &ColorTheme{
-		BackgroundColor:       gdk.NewRGBA(45.0/255, 45.0/255, 45.0/255, 1),
-		TextColor:             gdk.NewRGBA(245.0/255, 245.0/255, 245.0/255, 1),
-		SelectedBgColor:       gdk.NewRGBA(64.0/255, 64.0/255, 64.0/255, 1),
-		SelectedTextColor:     gdk.NewRGBA(245.0/255, 245.0/255, 245.0/255, 1),
-		HeaderBackgroundColor: gdk.NewRGBA(36.0/255, 36.0/255, 36.0/255, 1),
-		HeaderTextColor:       gdk.NewRGBA(245.0/255, 245.0/255, 245.0/255, 1),
-		CopyCutBgColor:        gdk.NewRGBA(50.0/255, 70.0/255, 90.0/255, 1),
-		HoverBgColor:          gdk.NewRGBA(55.0/255, 55.0/255, 55.0/255, 1),
+		BackgroundColor:       gdk.NewRGBA(0, 0, 0, 0),        // Transparent, let CSS handle it
+		TextColor:             gdk.NewRGBA(1, 1, 1, 1),        // Default to white, will be overridden
+		SelectedBgColor:       gdk.NewRGBA(0.2, 0.4, 0.8, 0.2), // Default accent-like
+		SelectedTextColor:     gdk.NewRGBA(0.2, 0.4, 0.8, 1),   // Default accent
+		HeaderBackgroundColor: gdk.NewRGBA(0, 0, 0, 0.05),     // Subtle
+		HeaderTextColor:       gdk.NewRGBA(1, 1, 1, 0.6),      // Dimmed
+		CopyCutBgColor:        gdk.NewRGBA(0.5, 0.5, 0.5, 0.2),
+		HoverBgColor:          gdk.NewRGBA(1, 1, 1, 0.05),
+		AccentColor:           gdk.NewRGBA(0.2, 0.4, 0.8, 1),
 	}
 }

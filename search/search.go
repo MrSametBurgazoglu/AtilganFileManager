@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"os"
 	"os/exec"
-	"path/filepath"
+	"strings"
 
 	"github.com/MrSametBurgazoglu/atilgan/file_list"
+	"github.com/MrSametBurgazoglu/atilgan/preferences"
+	"github.com/MrSametBurgazoglu/atilgan/special_path"
 	"github.com/MrSametBurgazoglu/atilgan/types"
 	"github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
@@ -16,86 +18,134 @@ type Search struct {
 	*gtk.Box
 	filenameEntry *gtk.Entry
 	contentEntry  *gtk.Entry
-	searchButton  *gtk.Button
+	dateDropdown  *gtk.DropDown
+	sizeDropdown  *gtk.DropDown
+	ContentPanel  *gtk.Box
+	SearchBar     *gtk.Box
 	fileList      *file_list.FileList
 	path          string
 	PathChanged   func(path string)
 }
 
-func NewSearch(path string) *Search {
-	box := gtk.NewBox(gtk.OrientationVertical, 6)
+func NewSearch(path string, specialPathManager *special_path.SpecialPathManager, parent *gtk.Window, config *preferences.Config) *Search {
+	box := gtk.NewBox(gtk.OrientationVertical, 0)
 	search := &Search{
 		Box:  box,
 		path: path,
 	}
 
-	hBox := gtk.NewBox(gtk.OrientationHorizontal, 6)
-	hBox.SetVExpand(false)
+	search.SearchBar = gtk.NewBox(gtk.OrientationHorizontal, 6)
+	search.SearchBar.SetHExpand(true)
+	search.SearchBar.SetMarginStart(20)
+	search.SearchBar.SetMarginEnd(20)
 
-	filenameBox := gtk.NewBox(gtk.OrientationHorizontal, 6)
-	filenameLabel := gtk.NewLabel("Filename:")
 	search.filenameEntry = gtk.NewEntry()
+	search.filenameEntry.SetHExpand(true)
+	search.filenameEntry.SetPlaceholderText("Filter by name...")
 	search.filenameEntry.AddCSSClass("search-entry")
-	filenameBox.Append(filenameLabel)
-	filenameBox.Append(search.filenameEntry)
-	hBox.Append(filenameBox)
+	search.SearchBar.Append(search.filenameEntry)
 
-	contentBox := gtk.NewBox(gtk.OrientationHorizontal, 6)
-	contentLabel := gtk.NewLabel("Content:")
+	search.ContentPanel = gtk.NewBox(gtk.OrientationHorizontal, 6)
+	search.ContentPanel.SetMarginStart(20)
+	search.ContentPanel.SetMarginEnd(20)
+	search.ContentPanel.SetMarginTop(6)
+
 	search.contentEntry = gtk.NewEntry()
+	search.contentEntry.SetHExpand(true)
+	search.contentEntry.SetPlaceholderText("Search inside files...")
 	search.contentEntry.AddCSSClass("search-entry")
-	contentBox.Append(contentLabel)
-	contentBox.Append(search.contentEntry)
-	hBox.Append(contentBox)
+	search.ContentPanel.Append(search.contentEntry)
 
-	search.searchButton = gtk.NewButtonWithLabel("Search")
-	search.searchButton.ConnectClicked(func() {
-		search.fileList.SetItems(make([]*types.ListItem, 0))
-		go search.performSearch()
+	search.dateDropdown = gtk.NewDropDownFromStrings([]string{"Any Time", "Last 24h", "Last Week", "Last Month", "Last Year"})
+	search.ContentPanel.Append(search.dateDropdown)
+
+	search.sizeDropdown = gtk.NewDropDownFromStrings([]string{"Any Size", "< 1 MB", "1-100 MB", "100MB-1GB", "> 1 GB"})
+	search.ContentPanel.Append(search.sizeDropdown)
+
+	search.ContentPanel.SetVisible(false)
+
+	toggleContentBtn := gtk.NewButtonFromIconName("preferences-system-symbolic")
+	toggleContentBtn.ConnectClicked(func() {
+		visible := !search.ContentPanel.Visible()
+		search.ContentPanel.SetVisible(visible)
+		if visible {
+			toggleContentBtn.AddCSSClass("suggested-action")
+		} else {
+			toggleContentBtn.RemoveCSSClass("suggested-action")
+		}
 	})
-	hBox.Append(search.searchButton)
-	box.Append(hBox)
+	search.SearchBar.Append(toggleContentBtn)
 
-	search.fileList = file_list.NewFileList(true, nil, nil)
-	search.fileList.PathChanged = func(path string) {
-		if search.PathChanged != nil {
-			search.PathChanged(filepath.Dir(path))
+	doSearch := func() {
+		filename := search.filenameEntry.Text()
+		content := search.contentEntry.Text()
+		searchContent := search.ContentPanel.Visible()
+
+		if filename == "" && (!searchContent || content == "") {
+			return
 		}
-	}
-	search.fileList.KeyRightPressed = func() {
-		if search.PathChanged != nil {
-			selectedItem := search.fileList.Items[search.fileList.SelectedIDX]
-			if !selectedItem.IsDir {
-				cmd := exec.Command("xdg-open", selectedItem.Path)
-				cmd.Start()
-			} else {
-				search.PathChanged(filepath.Dir(selectedItem.Path))
-			}
-		}
-	}
-	search.fileList.SetMinContentHeight(200)
-	search.fileList.SelectionChanged = func(index int) {
+
+		search.fileList.SetItems(make([]*types.ListItem, 0))
+		go search.performSearch(searchContent)
 	}
 
+	search.filenameEntry.ConnectActivate(func() { doSearch() })
+	search.contentEntry.ConnectActivate(func() { doSearch() })
+
+	search.fileList = file_list.NewFileList(true, specialPathManager, parent, config)
+	search.fileList.SetVExpand(true)
+
+	box.Append(search.ContentPanel)
 	box.Append(search.fileList)
 
 	return search
 }
 
-func (s *Search) performSearch() {
+func (s *Search) performSearch(searchContent bool) {
 	filename := s.filenameEntry.Text()
 	content := s.contentEntry.Text()
 
+	args := []string{s.path}
+	if filename != "" {
+		args = append(args, "-name", "*"+filename+"*")
+	}
+
+	if searchContent {
+		dateIdx := s.dateDropdown.Selected()
+		switch dateIdx {
+		case 1: // Last 24h
+			args = append(args, "-mtime", "-1")
+		case 2: // Last Week
+			args = append(args, "-mtime", "-7")
+		case 3: // Last Month
+			args = append(args, "-mtime", "-30")
+		case 4: // Last Year
+			args = append(args, "-mtime", "-365")
+		}
+
+		sizeIdx := s.sizeDropdown.Selected()
+		switch sizeIdx {
+		case 1: // < 1 MB
+			args = append(args, "-size", "-1M")
+		case 2: // 1-100 MB
+			args = append(args, "-size", "+1M", "-size", "-100M")
+		case 3: // 100MB-1GB
+			args = append(args, "-size", "+100M", "-size", "-1G")
+		case 4: // > 1 GB
+			args = append(args, "-size", "+1G")
+		}
+	}
+
 	var cmd *exec.Cmd
 
-	if content == "" {
-		cmd = exec.Command("find", s.path, "-name", "*"+filename+"*")
+	if !searchContent || content == "" {
+		cmd = exec.Command("find", args...)
 	} else {
-		if filename == "" {
-			cmd = exec.Command("grep", "-rl", content, s.path)
-		} else {
-			cmd = exec.Command("sh", "-c", "find "+s.path+" -name *"+filename+"* -print0 | xargs -0 grep -l "+content)
-		}
+		// Use find to get files and then grep
+		findArgs := append(args, "-type", "f", "-print0")
+		grepCmd := "xargs -0 grep -l " + content
+		// We use sh -c to handle the pipe and potential escaping issues
+		cmd = exec.Command("sh", "-c", "find "+"\""+s.path+"\" "+" "+strings.Join(findArgs[1:], " ")+" | "+grepCmd)
 	}
 
 	stdout, err := cmd.StdoutPipe()

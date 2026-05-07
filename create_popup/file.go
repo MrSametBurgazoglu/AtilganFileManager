@@ -25,15 +25,53 @@ func NewFileSelector(path string, pathChanged func(string)) *FileSelector {
 		Entry:    gtk.NewEntry(),
 		BasePath: path,
 	}
+	fs.SetTitle("Create New File")
 	fs.SetResizable(false)
-	fs.SetDefaultSize(400, 600)
+	fs.SetDefaultSize(350, 450)
 	fs.SetModal(true)
+
 	headerBar := gtk.NewHeaderBar()
-	headerBar.SetTitleWidget(gtk.NewLabel("File Creator"))
+	headerBar.SetShowTitleButtons(false)
+	
+	titleLabel := gtk.NewLabel("Create New File")
+	titleLabel.AddCSSClass("title-4")
+	headerBar.SetTitleWidget(titleLabel)
+	
+	cancelBtn := gtk.NewButtonWithLabel("Cancel")
+	cancelBtn.ConnectClicked(func() {
+		fs.Window.Destroy()
+	})
+	headerBar.PackStart(cancelBtn)
+	
+	createBtn := gtk.NewButtonWithLabel("Create")
+	createBtn.AddCSSClass("suggested-action")
+	createBtn.SetSensitive(false)
+	
+	headerBar.PackEnd(createBtn)
 	fs.SetTitlebar(headerBar)
 
-	box := gtk.NewBox(gtk.OrientationVertical, 5)
-	box.Append(fs.Entry)
+	mainBox := gtk.NewBox(gtk.OrientationVertical, 12)
+	mainBox.SetMarginTop(16)
+	mainBox.SetMarginBottom(16)
+	mainBox.SetMarginStart(16)
+	mainBox.SetMarginEnd(16)
+
+	entryBox := gtk.NewBox(gtk.OrientationVertical, 4)
+	entryLabel := gtk.NewLabel("File Name")
+	entryLabel.SetHAlign(gtk.AlignStart)
+	entryLabel.AddCSSClass("caption")
+	
+	fs.Entry.SetPlaceholderText("Enter file name...")
+	fs.Entry.SetHExpand(true)
+	
+	entryBox.Append(entryLabel)
+	entryBox.Append(fs.Entry)
+	mainBox.Append(entryBox)
+
+	listLabel := gtk.NewLabel("Existing Files")
+	listLabel.SetHAlign(gtk.AlignStart)
+	listLabel.AddCSSClass("caption")
+	mainBox.Append(listLabel)
 
 	fs.ListStore = gio.NewListStore(glib.TypeObject)
 
@@ -41,6 +79,11 @@ func NewFileSelector(path string, pathChanged func(string)) *FileSelector {
 	factory.ConnectSetup(func(o *glib.Object) {
 		item := o.Cast().(*gtk.ListItem)
 		label := gtk.NewLabel("")
+		label.SetHAlign(gtk.AlignStart)
+		label.SetMarginStart(8)
+		label.SetMarginEnd(8)
+		label.SetMarginTop(4)
+		label.SetMarginBottom(4)
 		item.SetChild(label)
 	})
 	factory.ConnectBind(func(o *glib.Object) {
@@ -53,20 +96,33 @@ func NewFileSelector(path string, pathChanged func(string)) *FileSelector {
 
 	selection := gtk.NewNoSelection(fs.ListStore)
 	fs.ListView = gtk.NewListView(selection, &factory.ListItemFactory)
+	
 	scrolledWindow := gtk.NewScrolledWindow()
 	scrolledWindow.SetChild(fs.ListView)
 	scrolledWindow.SetVExpand(true)
+	scrolledWindow.AddCSSClass("view")
+	scrolledWindow.SetHasFrame(true)
 
-	fs.Entry.Connect("notify::text", func() {
+	mainBox.Append(scrolledWindow)
+
+	validate := func() {
 		fs.populateList()
-		if fs.isEntryValid() {
+		isValid := fs.isEntryValid()
+		createBtn.SetSensitive(isValid)
+		if fs.Entry.Text() == "" {
+			fs.Entry.SetIconFromIconName(gtk.EntryIconSecondary, "")
+		} else if isValid {
 			fs.Entry.SetIconFromIconName(gtk.EntryIconSecondary, "object-select-symbolic")
+			fs.Entry.RemoveCSSClass("error")
 		} else {
 			fs.Entry.SetIconFromIconName(gtk.EntryIconSecondary, "window-close-symbolic")
+			fs.Entry.AddCSSClass("error")
 		}
-	})
+	}
 
-	fs.Entry.Connect("activate", func() {
+	fs.Entry.Connect("notify::text", validate)
+
+	createAction := func() {
 		if fs.isEntryValid() {
 			file, err := os.Create(filepath.Join(fs.BasePath, fs.GetNewName()))
 			if err != nil {
@@ -76,13 +132,13 @@ func NewFileSelector(path string, pathChanged func(string)) *FileSelector {
 				file.Close()
 			}
 			pathChanged("")
-		} else {
-			fs.Entry.SetIconFromIconName(gtk.EntryIconSecondary, "window-close-symbolic")
 		}
-	})
+	}
 
-	box.Append(scrolledWindow)
-	fs.SetChild(box)
+	fs.Entry.Connect("activate", createAction)
+	createBtn.ConnectClicked(createAction)
+
+	fs.SetChild(mainBox)
 	fs.populateList()
 	fs.Entry.GrabFocus()
 

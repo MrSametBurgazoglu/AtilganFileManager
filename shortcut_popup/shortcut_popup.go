@@ -1,11 +1,12 @@
 package shortcut_popup
 
 import (
-	"os"
-	"path/filepath"
-
+	_ "embed"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
+
+//go:embed shortcut_popup.ui
+var uiXML string
 
 type ShortcutPopup struct {
 	*gtk.ShortcutsWindow
@@ -13,13 +14,7 @@ type ShortcutPopup struct {
 }
 
 func NewShortcutPopup(parent *gtk.Window) *ShortcutPopup {
-	exePath, err := os.Executable()
-	if err != nil {
-		return nil
-	}
-	exeDir := filepath.Dir(exePath)
-	uiPath := filepath.Join(exeDir, "shortcut_popup/shortcut_popup.ui")
-	builder := gtk.NewBuilderFromFile(uiPath)
+	builder := gtk.NewBuilderFromString(uiXML)
 	shortCutWindowObj := builder.GetObject("shortcuts-window")
 	window := shortCutWindowObj.Cast().(*gtk.ShortcutsWindow)
 	shortcutPopup := &ShortcutPopup{
