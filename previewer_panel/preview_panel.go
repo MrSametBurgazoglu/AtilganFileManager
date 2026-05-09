@@ -27,7 +27,9 @@ type PreviewPanel struct {
 	videoDetails            *previewer.VideoDetailsPreviewer
 	musicDetails            *previewer.MusicDetailsPreviewer
 	pictureDetails          *previewer.PictureDetailsPreviewer
+	recentPreviewer         *previewer.RecentPreviewer
 	filePath                string
+	currentDirectory        string
 	specialPathManager      *special_path.SpecialPathManager
 }
 
@@ -47,6 +49,8 @@ func NewPreviewPanel(path string, changePath func(string), specialPathManager *s
 		videoDetails:            previewer.NewVideoDetailsPreviewer(),
 		musicDetails:            previewer.NewMusicDetailsPreviewer(),
 		pictureDetails:          previewer.NewPictureDetailsPreviewer(),
+		recentPreviewer:         previewer.NewRecentPreviewer(specialPathManager, changePath),
+		currentDirectory:        path,
 		specialPathManager:      specialPathManager,
 	}
 	pp.AddCSSClass("preview-panel")
@@ -70,9 +74,14 @@ func NewPreviewPanel(path string, changePath func(string), specialPathManager *s
 	pp.AddTitled(pp.videoDetails, "videodetails", "Video Details")
 	pp.AddTitled(pp.musicDetails, "musicdetails", "Music Details")
 	pp.AddTitled(pp.pictureDetails, "picturedetails", "Picture Details")
+	pp.AddTitled(pp.recentPreviewer, "recentpreviewer", "Recent Previewer")
 
 	pp.SetVExpand(true)
 	return pp
+}
+
+func (pp *PreviewPanel) SetCurrentDirectory(path string) {
+	pp.currentDirectory = path
 }
 
 func (pp *PreviewPanel) Update(filePath string) {
@@ -84,7 +93,12 @@ func (pp *PreviewPanel) Update(filePath string) {
 	println("PreviewPanel Update called with:", filePath)
 
 	if filePath == "" {
-		pp.SetVisibleChildName("emptypreviewer")
+		if pp.currentDirectory == "home://" {
+			pp.recentPreviewer.Refresh()
+			pp.SetVisibleChildName("recentpreviewer")
+		} else {
+			pp.SetVisibleChildName("emptypreviewer")
+		}
 		return
 	}
 

@@ -66,6 +66,10 @@ func (spm *SpecialPathManager) AddRecentPath(path string) {
 	spm.recentManager.AddPath(path)
 }
 
+func (spm *SpecialPathManager) GetRecentManager() *recent.RecentManager {
+	return spm.recentManager
+}
+
 func (spm *SpecialPathManager) GetTagManager() *tag.TagManager {
 	return spm.tagManager
 }

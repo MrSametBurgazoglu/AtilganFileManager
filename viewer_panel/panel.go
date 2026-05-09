@@ -17,6 +17,7 @@ type Panel struct {
 	PictureViewer *viewer.PictureViewer
 	MusicViewer   *viewer.MusicViewer
 	NetworkViewer *network.NetworkViewer
+	HomeViewer    *viewer.HomeViewer
 	Stack         *gtk.Stack
 	Config        *preferences.Config
 }
@@ -29,6 +30,7 @@ func NewPanel(mainWindow *gtk.Window, path string, pathChanged func(string), spe
 		VideoViewer:   viewer.NewVideoViewer(mainWindow, path, pathChanged, specialPathManager, config),
 		PictureViewer: viewer.NewPictureViewer(mainWindow, path, pathChanged, specialPathManager, config),
 		MusicViewer:   viewer.NewMusicViewer(mainWindow, path, pathChanged, specialPathManager, config),
+		HomeViewer:    viewer.NewHomeViewer(mainWindow, pathChanged, config),
 		Config:        config,
 	}
 
@@ -42,12 +44,13 @@ func NewPanel(mainWindow *gtk.Window, path string, pathChanged func(string), spe
 	panel.Stack.AddNamed(panel.PictureViewer, "picture_viewer")
 	panel.Stack.AddNamed(panel.MusicViewer, "music_viewer")
 	panel.Stack.AddNamed(panel.NetworkViewer, "network")
+	panel.Stack.AddNamed(panel.HomeViewer, "home_viewer")
 
 	panel.Box.AddCSSClass("viewer-panel")
 	panel.SetHExpand(true)
 	panel.Append(panel.Stack)
 
-	panel.Stack.SetVisibleChildName("file")
+	panel.SetPath(path)
 
 	return panel
 }
@@ -57,6 +60,9 @@ func (p *Panel) SetPath(path string) {
 	
 	var childName string
 	switch {
+	case path == "home://":
+		p.HomeViewer.Refresh(true)
+		childName = "home_viewer"
 	case path == "network://":
 		p.NetworkViewer.Refresh()
 		childName = "network"

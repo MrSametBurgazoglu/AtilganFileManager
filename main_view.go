@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"path/filepath"
 
 	"github.com/MrSametBurgazoglu/atilgan/fileops"
@@ -54,13 +53,8 @@ func NewMainBox(mainWindow *adw.ApplicationWindow, headerBar *header.HeaderBar, 
 
 	curdir := initialPath
 	if curdir == "" {
-		var err error
-		curdir, err = os.Getwd()
-		if err != nil {
-			home, _ := os.UserHomeDir()
-			curdir = home
-		}
-	} else {
+		curdir = "home://"
+	} else if curdir != "home://" {
 		// Ensure it's an absolute path
 		if abs, err := filepath.Abs(curdir); err == nil {
 			curdir = abs
@@ -366,6 +360,7 @@ func (m *MainBox) pathChanged(path string) {
 		m.SpecialPaths.AddRecentPath(path)
 	}
 
+	m.PreviewerPanel.SetCurrentDirectory(path)
 	m.updatePreviewer()
 	m.Pathbar.UpdatePathBar(path)
 	m.SideBar.SetPath(path)

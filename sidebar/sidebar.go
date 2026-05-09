@@ -62,6 +62,7 @@ func NewSidebar(pathChanged func(string), config *preferences.Config) *Sidebar {
 	music := xdg.UserDirs.Music
 	videos := xdg.UserDirs.Videos
 
+	sidebar.addLocationButton("go-home-symbolic", "Start Page", "home://")
 	sidebar.addLocationButton("user-home-symbolic", "Home", homeDir)
 	sidebar.addLocationButton("document-open-recent-symbolic", "Recent", "recent://")
 	sidebar.addLocationButton("user-trash-symbolic", "Trash", "trash://")
