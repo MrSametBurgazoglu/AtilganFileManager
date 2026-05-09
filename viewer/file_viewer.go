@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
-	"sort"
 	"strings"
 
 	"github.com/MrSametBurgazoglu/atilgan/file_list"
@@ -154,21 +152,16 @@ func (viewer *FileViewer) Refresh(newFilter bool) {
 		return
 	}
 
-	// Refresh Git Status
-	viewer.GitManager.Refresh(viewer.Path)
-
 	if newFilter {
 		viewer.Filters = []string{}
 		viewer.FiltersMap = make(map[string]bool)
 		viewer.DefaultFilters = make([]string, 0)
-		hasDir := false
-		hasExec := false
-		hasHidden := false
+		hasDir, hasExec, hasHidden := false, false, false
 		for _, entry := range entries {
-			if !entry.IsDir() && !strings.HasPrefix(entry.Name(), ".") {
-				hasExec = true
-			} else if strings.HasPrefix(entry.Name(), ".") {
+			if strings.HasPrefix(entry.Name(), ".") {
 				hasHidden = true
+			} else if !entry.IsDir() {
+				hasExec = true
 			} else {
 				hasDir = true
 			}
@@ -188,127 +181,19 @@ func (viewer *FileViewer) Refresh(newFilter bool) {
 		viewer.UpdateFilterPopover()
 	}
 
-	var filteredEntries []os.DirEntry
-	for _, entry := range entries {
-		if viewer.SearchValue != "" {
-			if !strings.HasPrefix(strings.ToLower(entry.Name()), strings.ToLower(viewer.SearchValue)) {
-				continue
-			}
-		}
-		fileType := fileops.GetFileType(entry)
-		show := false
-		if fileType == types.TypeDir {
-			if viewer.FiltersMap["Directories"] {
-				show = true
-			}
-		} else if fileType == types.TypeExec {
-			if viewer.FiltersMap["Executables"] {
-				show = true
-			}
-		} else if fileType == types.TypeHidden {
-			if viewer.FiltersMap["Hidden"] {
-				show = true
-			}
-		} else {
-			show = true
-		}
+	scanner := NewFileScanner(viewer.Path, viewer.SortOrder, viewer.GitManager)
+	scanner.SearchValue = viewer.SearchValue
+	scanner.FiltersMap = viewer.FiltersMap
 
-		if !show {
-			continue
-		}
-
-		filteredEntries = append(filteredEntries, entry)
+	items, err := scanner.Scan()
+	if err != nil {
+		fmt.Println("Error scanning directory:", err)
+		return
 	}
 
-	sort.Slice(filteredEntries, func(i, j int) bool {
-		switch viewer.SortOrder {
-		case types.SortByTime:
-			infoI, errI := filteredEntries[i].Info()
-			infoJ, errJ := filteredEntries[j].Info()
-			if errI != nil || errJ != nil {
-				return false
-			}
-			return infoI.ModTime().After(infoJ.ModTime())
-		case types.SortBySize:
-			isDirI := filteredEntries[i].IsDir()
-			isDirJ := filteredEntries[j].IsDir()
-			if isDirI && !isDirJ {
-				return true
-			}
-			if !isDirI && isDirJ {
-				return false
-			}
-			infoI, errI := filteredEntries[i].Info()
-			infoJ, errJ := filteredEntries[j].Info()
-			if errI == nil && errJ == nil {
-				if infoI.Size() != infoJ.Size() {
-					return infoI.Size() > infoJ.Size()
-				}
-			}
-			return strings.ToLower(filteredEntries[i].Name()) < strings.ToLower(filteredEntries[j].Name())
-		case types.SortByType:
-			typeI := fileops.GetFileType(filteredEntries[i])
-			typeJ := fileops.GetFileType(filteredEntries[j])
-			if typeI != typeJ {
-				return typeI < typeJ
-			}
-			return strings.ToLower(filteredEntries[i].Name()) < strings.ToLower(filteredEntries[j].Name())
-		default:
-			return strings.ToLower(filteredEntries[i].Name()) < strings.ToLower(filteredEntries[j].Name())
-		}
-	})
+	viewer.FileViewerList.SetItems(items)
 
-	newFiles := make([]*types.ListItem, 0)
-	var sizeThresholds []int64
-	if viewer.SortOrder == types.SortBySize {
-		sizeThresholds = fileops.CalculateSizeThresholds(filteredEntries)
-	}
-
-	for _, entry := range filteredEntries {
-		fullPath := filepath.Join(viewer.Path, entry.Name())
-		var group string
-		if viewer.SortOrder == types.SortByTime {
-			info, err := entry.Info()
-			if err != nil {
-				group = "Unknown"
-			} else {
-				group = fileops.GetGroupForTime(info.ModTime())
-			}
-		} else if viewer.SortOrder == types.SortBySize {
-			if entry.IsDir() {
-				group = "Directories"
-			} else {
-				info, _ := entry.Info()
-				group = fileops.GetGroupForSize(info.Size(), sizeThresholds)
-			}
-		} else if viewer.SortOrder == types.SortByType {
-			group = fileops.GetGroupForType(entry)
-		} else {
-			name := entry.Name()
-			runes := []rune(strings.ToLower(name))
-			firstRune := runes[0]
-			group = string(firstRune)
-		}
-		listItem := &types.ListItem{
-			Name:      entry.Name(),
-			Path:      fullPath,
-			Group:     group,
-			IsDir:     entry.IsDir(),
-			GitStatus: string(viewer.GitManager.GetStatus(fullPath)),
-		}
-		if listItem.IsDir {
-			listItem.ItemCount = fileops.GetDirItemCount(fullPath)
-		} else {
-			info, err := entry.Info()
-			if err == nil {
-				listItem.Size = info.Size()
-			}
-		}
-		newFiles = append(newFiles, listItem)
-	}
-	viewer.FileViewerList.SetItems(newFiles)
-
-	if len(newFiles) == 0 {
+	if len(items) == 0 {
 		viewer.stack.SetVisibleChildName("empty")
 	} else {
 		viewer.stack.SetVisibleChildName("list")

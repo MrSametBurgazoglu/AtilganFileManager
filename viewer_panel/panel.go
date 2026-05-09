@@ -54,20 +54,25 @@ func NewPanel(mainWindow *gtk.Window, path string, pathChanged func(string), spe
 
 func (p *Panel) SetPath(path string) {
 	p.Path = path
-	if path == "network://" {
+	
+	var childName string
+	switch {
+	case path == "network://":
 		p.NetworkViewer.Refresh()
-		p.Stack.SetVisibleChildName("network")
-	} else if path == fileops.GetVideosPath() {
+		childName = "network"
+	case path == fileops.GetVideosPath():
 		p.VideoViewer.SetPath(path)
-		p.Stack.SetVisibleChildName("video_viewer")
-	} else if path == fileops.GetPicturesPath() {
+		childName = "video_viewer"
+	case path == fileops.GetPicturesPath():
 		p.PictureViewer.SetPath(path)
-		p.Stack.SetVisibleChildName("picture_viewer")
-	} else if path == fileops.GetMusicPath() {
+		childName = "picture_viewer"
+	case path == fileops.GetMusicPath():
 		p.MusicViewer.SetPath(path)
-		p.Stack.SetVisibleChildName("music_viewer")
-	} else {
+		childName = "music_viewer"
+	default:
 		p.FileViewer.SetPath(path)
-		p.Stack.SetVisibleChildName("file")
+		childName = "file"
 	}
+	
+	p.Stack.SetVisibleChildName(childName)
 }

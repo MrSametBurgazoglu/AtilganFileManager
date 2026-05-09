@@ -18,7 +18,6 @@ type SpecialPathManager struct {
 func NewSpecialPathManager() (*SpecialPathManager, error) {
 	tagManager, err := tag.NewTagManager()
 	if err != nil {
-		println(err.Error())
 		return nil, err
 	}
 	recentManager, err := recent.NewRecentManager()

@@ -21,18 +21,31 @@ type Config struct {
 	DefaultSortOrder  string `json:"default_sort_order"` // "name", "size", "time", "type"
 }
 
+const (
+	DefaultTheme             = "system"
+	DefaultShowHidden        = false
+	DefaultIconSize          = 48
+	DefaultSidebarWidth      = 180
+	DefaultViewMode          = "grid"
+	DefaultConfirmDelete     = true
+	DefaultEnablePreviewPane = true
+	DefaultTerminalEmulator  = "gnome-terminal"
+	DefaultEnableThumbnails  = true
+	DefaultSortOrder         = "name"
+)
+
 func DefaultConfig() *Config {
 	return &Config{
-		Theme:             "system",
-		ShowHidden:        false,
-		IconSize:          48,
-		SidebarWidth:      180,
-		DefaultViewMode:   "grid",
-		ConfirmDelete:     true,
-		EnablePreviewPane: true,
-		TerminalEmulator:  "gnome-terminal",
-		EnableThumbnails:  true,
-		DefaultSortOrder:  "name",
+		Theme:             DefaultTheme,
+		ShowHidden:        DefaultShowHidden,
+		IconSize:          DefaultIconSize,
+		SidebarWidth:      DefaultSidebarWidth,
+		DefaultViewMode:   DefaultViewMode,
+		ConfirmDelete:     DefaultConfirmDelete,
+		EnablePreviewPane: DefaultEnablePreviewPane,
+		TerminalEmulator:  DefaultTerminalEmulator,
+		EnableThumbnails:  DefaultEnableThumbnails,
+		DefaultSortOrder:  DefaultSortOrder,
 	}
 }
 
@@ -41,14 +54,18 @@ func GetConfigPath() string {
 }
 
 func LoadConfig() *Config {
+	config := DefaultConfig()
 	path := GetConfigPath()
+	
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return DefaultConfig()
+		return config
 	}
 
-	config := DefaultConfig()
-	json.Unmarshal(data, config)
+	if err := json.Unmarshal(data, config); err != nil {
+		// If config is corrupted, return default
+		return DefaultConfig()
+	}
 	return config
 }
 

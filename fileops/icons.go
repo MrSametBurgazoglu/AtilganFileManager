@@ -124,39 +124,64 @@ func GetFileDescription(fileName string) string {
 	return strings.ToUpper(strings.TrimPrefix(ext, ".")) + " File"
 }
 
+var ImageExtensions = map[string]bool{
+	".png":  true,
+	".jpg":  true,
+	".jpeg": true,
+	".gif":  true,
+	".webp": true,
+	".svg":  true,
+	".bmp":  true,
+	".tiff": true,
+}
+
+var VideoExtensions = map[string]bool{
+	".mp4":  true,
+	".mkv":  true,
+	".mov":  true,
+	".avi":  true,
+	".webm": true,
+	".wmv":  true,
+}
+
+var MusicExtensions = map[string]bool{
+	".mp3":  true,
+	".ogg":  true,
+	".wav":  true,
+	".flac": true,
+	".m4a":  true,
+}
+
+var DocumentExtensions = map[string]bool{
+	".pdf":  true,
+	".epub": true,
+	".mobi": true,
+	".docx": true,
+	".doc":  true,
+	".xlsx": true,
+	".xls":  true,
+	".pptx": true,
+	".ppt":  true,
+	".odt":  true,
+	".rtf":  true,
+	".csv":  true,
+}
+
 func IsImage(fileName string) bool {
-	fileName = strings.ToLower(fileName)
-	return strings.HasSuffix(fileName, ".png") ||
-		strings.HasSuffix(fileName, ".jpg") ||
-		strings.HasSuffix(fileName, ".jpeg") ||
-		strings.HasSuffix(fileName, ".gif") ||
-		strings.HasSuffix(fileName, ".webp") ||
-		strings.HasSuffix(fileName, ".svg")
+	return ImageExtensions[strings.ToLower(filepath.Ext(fileName))]
 }
 
 func IsText(fileName string) bool {
-	fileName = strings.ToLower(fileName)
-	return strings.HasSuffix(fileName, ".txt") ||
-		strings.HasSuffix(fileName, ".mod") ||
-		strings.HasSuffix(fileName, ".sum")
+	ext := strings.ToLower(filepath.Ext(fileName))
+	return ext == ".txt" || ext == ".md" || ext == ".mod" || ext == ".sum"
 }
 
 func IsVideo(fileName string) bool {
-	fileName = strings.ToLower(fileName)
-	return strings.HasSuffix(fileName, ".mp4") ||
-		strings.HasSuffix(fileName, ".mkv") ||
-		strings.HasSuffix(fileName, ".mov") ||
-		strings.HasSuffix(fileName, ".avi") ||
-		strings.HasSuffix(fileName, ".webm")
+	return VideoExtensions[strings.ToLower(filepath.Ext(fileName))]
 }
 
 func IsMusic(fileName string) bool {
-	fileName = strings.ToLower(fileName)
-	return strings.HasSuffix(fileName, ".mp3") ||
-		strings.HasSuffix(fileName, ".ogg") ||
-		strings.HasSuffix(fileName, ".wav") ||
-		strings.HasSuffix(fileName, ".flac") ||
-		strings.HasSuffix(fileName, ".m4a")
+	return MusicExtensions[strings.ToLower(filepath.Ext(fileName))]
 }
 
 func IsMedia(fileName string) bool {

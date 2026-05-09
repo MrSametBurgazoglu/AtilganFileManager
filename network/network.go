@@ -19,7 +19,7 @@ type Connection struct {
 	Host     string `json:"host"`
 	Port     string `json:"port"`
 	User     string `json:"user"`
-	Password string `json:"password"`
+	Password string `json:"-"`
 	Path     string `json:"path"`
 }
 

@@ -27,6 +27,15 @@
       <li>Rich set of keyboard shortcuts designed for power users</li>
     </ul>
   </description>
+  <content_rating type="oars-1.1"/>
+  <categories>
+    <category>Utility</category>
+    <category>FileTools</category>
+  </categories>
+  <provides>
+    <binary>atilgan</binary>
+    <id>io.github.mrsametburgazoglu.AtilganFileManager.desktop</id>
+  </provides>
   <screenshots>
     <screenshot type="default">
       <caption>Main window of Atilgan FileManager showing file navigation</caption>
@@ -35,7 +44,6 @@
   </screenshots>
   <launchable type="desktop-id">io.github.mrsametburgazoglu.AtilganFileManager.desktop</launchable>
   <releases>
-    <release version="0.2.0" date="2026-05-05"/>
+    <release version="0.2.0" date="2026-05-09"/>
   </releases>
-  <content_rating type="oars-1.1"/>
 </component>

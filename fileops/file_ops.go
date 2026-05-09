@@ -8,16 +8,16 @@ import (
 	"strings"
 )
 
-func Copy(sourcePath, destinationDir string) error {
+func Copy(sourcePath, destinationPath string) error {
 	info, err := os.Stat(sourcePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("stat source path %s: %w", sourcePath, err)
 	}
 
 	if info.IsDir() {
-		return copyDirectory(sourcePath, destinationDir)
+		return copyDirectory(sourcePath, destinationPath)
 	}
-	return copySingleFile(sourcePath, destinationDir)
+	return copySingleFile(sourcePath, destinationPath)
 }
 
 func copyDirectory(source, destination string) error {

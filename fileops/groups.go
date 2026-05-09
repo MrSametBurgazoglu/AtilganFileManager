@@ -152,10 +152,10 @@ func GetFileType(entry os.DirEntry) types.FileType {
 	}
 
 	ext := strings.ToLower(filepath.Ext(fileName))
-	switch ext {
-	case ".doc", ".docx", ".pdf", ".txt", ".md", ".odt", ".rtf", ".xls", ".xlsx", ".ppt", ".pptx", ".csv":
+	if DocumentExtensions[ext] {
 		return types.TypeDoc
-	case ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp", ".tiff", ".mp3", ".mp4", ".avi", ".mkv", ".wav", ".ogg", ".flac", ".mov", ".wmv":
+	}
+	if ImageExtensions[ext] || VideoExtensions[ext] || MusicExtensions[ext] {
 		return types.TypeMedia
 	}
 
