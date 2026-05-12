@@ -1,0 +1,64 @@
+# .goreleaser.yaml
+version: 2
+builds:
+  - env:
+      - CGO_ENABLED=1
+    goos:
+      - linux
+    goarch:
+      - amd64
+    main: .
+    binary: atilgan
+    flags:
+      - -mod=vendor
+
+nfpms:
+  - id: atilgan
+    package_name: atilgan
+    vendor: MrSametBurgazoglu
+    homepage: https://github.com/MrSametBurgazoglu/AtilganFileManager
+    maintainer: MrSametBurgazoglu <samet@example.com>
+    description: A modern, keyboard-centric file manager written in Go and GTK4
+    license: GPLv3
+    formats:
+      - deb
+      - rpm
+    overrides:
+      deb:
+        dependencies:
+          - libgtk-4-1
+          - libadwaita-1-0
+          - libgtksourceview-5-0
+      rpm:
+        dependencies:
+          - gtk4
+          - libadwaita
+          - gtksourceview5
+    contents:
+      - src: io.github.mrsametburgazoglu.AtilganFileManager.desktop
+        dst: /usr/share/applications/io.github.mrsametburgazoglu.AtilganFileManager.desktop
+      - src: atilgan_icon.svg
+        dst: /usr/share/icons/hicolor/scalable/apps/io.github.mrsametburgazoglu.AtilganFileManager.svg
+      - src: io.github.mrsametburgazoglu.AtilganFileManager.metainfo.xml
+        dst: /usr/share/metainfo/io.github.mrsametburgazoglu.AtilganFileManager.metainfo.xml
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+      - io.github.mrsametburgazoglu.AtilganFileManager.desktop
+      - atilgan_icon.svg
+      - io.github.mrsametburgazoglu.AtilganFileManager.metainfo.xml
+
+checksum:
+  name_template: "checksums.txt"
+snapshot:
+  name_template: "{{ .Version }}-snapshot"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"

@@ -23,10 +23,8 @@ vendor/
 go.work
 go.work.sum
 
-# Flatpak build directories
-.flatpak-builder/
-build-dir/
-repo/
+# Release
+dist/
 
 # env file
 .env
@@ -34,5 +32,3 @@ repo/
 # Editor/IDE
 .idea/
 .vscode/
-
-example/

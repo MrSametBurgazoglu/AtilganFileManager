@@ -45,7 +45,26 @@ For the file previewer to work correctly with all file types, you need to instal
 
 ## Installation
 
-### Method 1: Building from Source
+### Method 1: Downloading Binaries (.rpm & .deb)
+
+You can download the latest stable versions of Atilgan for your distribution from the [GitHub Releases](https://github.com/MrSametBurgazoglu/AtilganFileManager/releases) page:
+
+*   **Fedora/RHEL/CentOS:** Download the `.rpm` package.
+*   **Debian/Ubuntu:** Download the `.deb` package.
+
+Once downloaded, you can install them using your package manager:
+
+**On Debian/Ubuntu:**
+```bash
+sudo apt install ./atilgan_*.deb
+```
+
+**On Fedora:**
+```bash
+sudo dnf install ./atilgan_*.rpm
+```
+
+### Method 2: Building from Source
 
 1.  **Clone the repository:**
     ```bash
@@ -61,21 +80,6 @@ For the file previewer to work correctly with all file types, you need to instal
 3.  **Run the application:**
     ```bash
     ./atilgan
-    ```
-
-### Method 2: Building via Flatpak
-
-You can build and run the application as a Flatpak using the provided manifest:
-
-1.  **Install Flatpak Builder:**
-    ```bash
-    flatpak install flathub org.flatpak.Builder
-    ```
-
-2.  **Build and run the app:**
-    ```bash
-    flatpak-builder --user --install --force-clean build-dir io.github.mrsametburgazoglu.AtilganFileManager.yaml
-    flatpak run io.github.mrsametburgazoglu.AtilganFileManager
     ```
 
 ## Shortcuts
