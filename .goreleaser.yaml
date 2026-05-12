@@ -9,8 +9,6 @@ builds:
       - amd64
     main: .
     binary: atilgan
-    flags:
-      - -mod=vendor
 
 nfpms:
   - id: atilgan
@@ -43,8 +41,7 @@ nfpms:
         dst: /usr/share/metainfo/io.github.mrsametburgazoglu.AtilganFileManager.metainfo.xml
 
 archives:
-  - format: tar.gz
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+  - name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
       - LICENSE
       - README.md
@@ -55,7 +52,7 @@ archives:
 checksum:
   name_template: "checksums.txt"
 snapshot:
-  name_template: "{{ .Version }}-snapshot"
+  version_template: "{{ .Version }}-snapshot"
 changelog:
   sort: asc
   filters:
