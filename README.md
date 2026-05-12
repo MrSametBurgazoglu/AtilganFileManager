@@ -4,8 +4,6 @@ Atilgan is a fast, lightweight, and modern file manager for Linux, meticulously 
 
 ![Atilgan Screenshot](screenshots/screenshot.png)
 
-https://github.com/user-attachments/assets/6ec71452-fd24-41bd-aeb2-4b1af8bf5939
-
 ## Features
 
 *   **Efficient Browsing:** Browse your files and directories with a responsive list view.
