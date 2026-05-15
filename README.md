@@ -1,6 +1,6 @@
-# Atilgan File Manager
+# 🚀 Atilgan File Manager
 
-Atilgan is a fast, lightweight, and modern file manager for Linux, meticulously crafted using the Go programming language and the GTK4 toolkit. It offers a clean and intuitive interface that focuses on providing a seamless file navigation experience without unnecessary bloat.
+Atilgan is a fast, lightweight, and modern file manager for Linux, meticulously crafted using the **Go** programming language and the **GTK4** toolkit with **Libadwaita**. It offers a clean, keyboard-centric interface that focuses on a seamless navigation experience without unnecessary bloat.
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/MrSametBurgazoglu/AtilganFileManager)](https://goreportcard.com/report/github.com/MrSametBurgazoglu/AtilganFileManager)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/MrSametBurgazoglu/AtilganFileManager)](https://github.com/MrSametBurgazoglu/AtilganFileManager/releases)
@@ -8,118 +8,88 @@ Atilgan is a fast, lightweight, and modern file manager for Linux, meticulously 
 
 ![Atilgan Screenshot](screenshots/screenshot.png)
 
-## 📥 Downloads
+## ⚡ Quick Install
 
-### Quick Install (One-liner)
-The fastest way to install Atilgan on Linux:
+The fastest way to install Atilgan on **Ubuntu, Debian, Fedora** and their derivatives:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/MrSametBurgazoglu/AtilganFileManager/main/install.sh | sh
 ```
+*The script automatically handles dependencies (GTK4, Libadwaita) and sets up your application menu.*
 
-### Manual Download
-You can also download pre-built packages from the [GitHub Releases](https://github.com/MrSametBurgazoglu/AtilganFileManager/releases) page.
+---
+
+## ✨ Key Features
+
+### 🔍 Advanced Previews
+Atilgan isn't just for browsing; it's for seeing. Our built-in previewer supports:
+*   **Code & Text:** Syntax highlighting for hundreds of languages with **internal search** (Ctrl+F).
+*   **Images & Graphics:** High-quality previews with metadata display.
+*   **Media:** Integrated video and audio playback.
+*   **Documents:** PDF and Office document previews (requires `poppler-utils` / `unoconv`).
+*   **Smart Directories:** View image folders as a **Gallery Grid** or a detailed list.
+
+### ⌨️ Keyboard-Centric Workflow
+Designed for speed, Atilgan allows you to manage your files without leaving the home row:
+*   **Instant Search:** Toggle search with `Ctrl+F` and navigate results instantly.
+*   **Power Navigation:** Use `Arrow Keys` for deep diving and `Shift + [Letter]` to jump to specific files.
+*   **Quick Actions:** Open a terminal in your current path with a single click or menu action.
+
+### 📂 File Management & Organization
+*   **Dual View Modes:** Toggle between detailed lists and visual grids.
+*   **Trash with Restoration:** Preview trashed items with their original path and date, and restore them with one click.
+*   **Tagging System:** Organize files across your system with custom color-coded tags.
+*   **Breadcrumb Pathbar:** Interactive pathbar for fast jumping between parent folders.
+*   **Multi-Tab Workspace:** Open multiple directories in tabs to manage complex file operations.
+
+### 🛠️ Built with Modern Tech
+*   **Libadwaita:** Follows the latest GNOME design patterns for a native "Adaptive" look.
+*   **Go & GTK4:** Blazing fast performance with modern memory safety.
+*   **Customizable:** Toggle hidden files, adjust sorting (Name, Time, Size, Type), and more.
+
+---
+
+## 📥 Manual Installation
+
+### Pre-built Packages
+Download native packages from the [GitHub Releases](https://github.com/MrSametBurgazoglu/AtilganFileManager/releases) page.
 
 | Platform | Format | Link |
 | :--- | :--- | :--- |
-| **Debian / Ubuntu / Linux Mint** | `.deb` | [Download latest .deb](https://github.com/MrSametBurgazoglu/AtilganFileManager/releases/latest) |
-| **Fedora / RHEL / CentOS** | `.rpm` | [Download latest .rpm](https://github.com/MrSametBurgazoglu/AtilganFileManager/releases/latest) |
+| **Ubuntu / Debian / Mint** | `.deb` | [Download latest](https://github.com/MrSametBurgazoglu/AtilganFileManager/releases/latest) |
+| **Fedora / RHEL** | `.rpm` | [Download latest](https://github.com/MrSametBurgazoglu/AtilganFileManager/releases/latest) |
 
-## Features
-
-*   **Efficient Browsing:** Browse your files and directories with a responsive list view.
-*   **Integrated Previews:** Built-in previewer for images, text files, documents, and media.
-*   **Smart Navigation:** Interactive breadcrumb path bar for easily moving through your system.
-*   **Sidebar Shortcuts:** Quick access to home, documents, downloads, and other special paths.
-*   **Search Capabilities:** Instant file and directory search within your current path.
-*   **File Operations:** Full support for rename, copy, cut, and paste.
-*   **Tags:** Organize your files with custom tags for easy categorization.
-*   **Keyboard Driven:** Rich set of keyboard shortcuts designed for power users.
-
-## Prerequisites
-
-### Development Libraries
-Before building Atilgan from source, you need to install the development libraries for GTK4, libadwaita, and gtksourceview.
-
-**On Debian/Ubuntu:**
+### Building from Source
 ```bash
-sudo apt-get install libgtk-4-dev libadwaita-1-dev gtksourceview5-dev
+# Clone the repo
+git clone https://github.com/MrSametBurgazoglu/AtilganFileManager.git
+cd AtilganFileManager
+
+# Install and build
+make build
+sudo make install
 ```
 
-**On Fedora:**
-```bash
-sudo dnf install gtk4-devel libadwaita-devel gtksourceview5-devel
-```
+---
 
-### Runtime Dependencies for Previews
-For the file previewer to work correctly with all file types, you need to install the following packages:
-
-*   **PDF Previews:** `pdftoppm` (usually part of the `poppler-utils` package)
-    *   Debian/Ubuntu: `sudo apt-get install poppler-utils`
-    *   Fedora: `sudo dnf install poppler-utils`
-*   **Document Previews:** `unoconv`
-    *   Debian/Ubuntu: `sudo apt-get install unoconv`
-    *   Fedora: `sudo dnf install unoconv`
-*   **Media Previews:**
-    *   Debian/Ubuntu: `sudo apt-get install ubuntu-restricted-extras`
-    *   Other distros may need GStreamer plugins for various media formats.
-
-## Installation
-
-### Method 1: Pre-built Packages (.rpm & .deb)
-
-1. Go to the [Releases](https://github.com/MrSametBurgazoglu/AtilganFileManager/releases) page.
-2. Download the package for your system.
-3. Install using your package manager:
-
-**On Debian/Ubuntu:**
-```bash
-sudo apt install ./atilgan_*.deb
-```
-
-**On Fedora:**
-```bash
-sudo dnf install ./atilgan_*.rpm
-```
-
-### Method 2: Building from Source
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/MrSametBurgazoglu/AtilganFileManager.git
-    cd AtilganFileManager
-    ```
-
-2.  **Build and install:**
-    ```bash
-    make build
-    sudo make install
-    ```
-
-### Method 3: Manual Packaging (for Maintainers)
-
-If you want to create `.deb` and `.rpm` packages locally, you can use [GoReleaser](https://goreleaser.com/):
-
-```bash
-make dist
-```
-The packages will be generated in the `dist/` directory.
-
-## Shortcuts
+## ⌨️ Common Shortcuts
 
 | Shortcut      | Action                                       |
 |---------------|----------------------------------------------|
-| `Ctrl + R`    | Rename the selected file or directory.       |
-| `Ctrl + F`    | Toggle the search bar.                       |
-| `Ctrl + C`    | Copy the selected file or directory.         |
-| `Ctrl + X`    | Cut the selected file or directory.          |
-| `Ctrl + V`    | Paste the copied/cut file or directory.      |
-| `Ctrl + H`    | Show the shortcuts help popup.               |
-| `Escape`      | Clear the copied/cut files.                  |
-| `Shift + [A-Z]` | Select the next file starting with the letter. |
-| `Left Arrow`  | Go to the parent directory.                  |
-| `Right Arrow` | Go into the selected directory.              |
+| `Ctrl + R`    | Rename selected item                         |
+| `Ctrl + F`    | Search in current folder                     |
+| `Ctrl + C/X/V`| Copy / Cut / Paste                           |
+| `Space`       | Open Quick Preview                           |
+| `Ctrl + T`    | New Tab                                      |
+| `Ctrl + H`    | Show all shortcuts                           |
+| `Left/Right`  | Back / Forward (Into Folder)                 |
 
-## License
+---
 
-This project is open-source. Please check the `LICENSE` file for more details. (Application metadata indicates GPL-3.0-or-later).
+## 🤝 Contributing
+
+Contributions are welcome! Whether it's a bug report, a new feature idea, or a translation, feel free to open an issue or submit a pull request.
+
+## 📄 License
+
+Atilgan is released under the **GPL-3.0** License. See the `LICENSE` file for details.
