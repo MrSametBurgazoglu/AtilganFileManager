@@ -30,6 +30,24 @@ fi
 
 echo "🚀 Installing Atilgan for $OS-$ARCH..."
 
+# 1.5 Install Dependencies
+install_dependencies() {
+    if command -v apt-get > /dev/null; then
+        echo "📦 Detecting Debian/Ubuntu-based system..."
+        echo "🔧 Installing dependencies (requires sudo)..."
+        sudo apt-get update
+        sudo apt-get install -y libgtk-4-1 libadwaita-1-0 libgtksourceview-5-0
+    elif command -v dnf > /dev/null; then
+        echo "📦 Detecting Fedora-based system..."
+        echo "🔧 Installing dependencies (requires sudo)..."
+        sudo dnf install -y gtk4 libadwaita gtksourceview5
+    else
+        echo "⚠️  Could not detect package manager. Please ensure GTK4, Libadwaita, and GtkSourceView 5 are installed."
+    fi
+}
+
+install_dependencies
+
 # 2. Get latest version from GitHub API
 LATEST_RELEASE=$(curl -s https://api.github.com/repos/$REPO/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 
