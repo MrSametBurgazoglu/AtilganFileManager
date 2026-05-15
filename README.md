@@ -2,7 +2,28 @@
 
 Atilgan is a fast, lightweight, and modern file manager for Linux, meticulously crafted using the Go programming language and the GTK4 toolkit. It offers a clean and intuitive interface that focuses on providing a seamless file navigation experience without unnecessary bloat.
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/MrSametBurgazoglu/AtilganFileManager)](https://goreportcard.com/report/github.com/MrSametBurgazoglu/AtilganFileManager)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/MrSametBurgazoglu/AtilganFileManager)](https://github.com/MrSametBurgazoglu/AtilganFileManager/releases)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
 ![Atilgan Screenshot](screenshots/screenshot.png)
+
+## 📥 Downloads
+
+### Quick Install (One-liner)
+The fastest way to install Atilgan on Linux:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/MrSametBurgazoglu/AtilganFileManager/main/install.sh | sh
+```
+
+### Manual Download
+You can also download pre-built packages from the [GitHub Releases](https://github.com/MrSametBurgazoglu/AtilganFileManager/releases) page.
+
+| Platform | Format | Link |
+| :--- | :--- | :--- |
+| **Debian / Ubuntu / Linux Mint** | `.deb` | [Download latest .deb](https://github.com/MrSametBurgazoglu/AtilganFileManager/releases/latest) |
+| **Fedora / RHEL / CentOS** | `.rpm` | [Download latest .rpm](https://github.com/MrSametBurgazoglu/AtilganFileManager/releases/latest) |
 
 ## Features
 
@@ -45,14 +66,11 @@ For the file previewer to work correctly with all file types, you need to instal
 
 ## Installation
 
-### Method 1: Downloading Binaries (.rpm & .deb)
+### Method 1: Pre-built Packages (.rpm & .deb)
 
-You can download the latest stable versions of Atilgan for your distribution from the [GitHub Releases](https://github.com/MrSametBurgazoglu/AtilganFileManager/releases) page:
-
-*   **Fedora/RHEL/CentOS:** Download the `.rpm` package.
-*   **Debian/Ubuntu:** Download the `.deb` package.
-
-Once downloaded, you can install them using your package manager:
+1. Go to the [Releases](https://github.com/MrSametBurgazoglu/AtilganFileManager/releases) page.
+2. Download the package for your system.
+3. Install using your package manager:
 
 **On Debian/Ubuntu:**
 ```bash
@@ -72,15 +90,20 @@ sudo dnf install ./atilgan_*.rpm
     cd AtilganFileManager
     ```
 
-2.  **Build the application:**
+2.  **Build and install:**
     ```bash
-    go build -o atilgan .
+    make build
+    sudo make install
     ```
 
-3.  **Run the application:**
-    ```bash
-    ./atilgan
-    ```
+### Method 3: Manual Packaging (for Maintainers)
+
+If you want to create `.deb` and `.rpm` packages locally, you can use [GoReleaser](https://goreleaser.com/):
+
+```bash
+make dist
+```
+The packages will be generated in the `dist/` directory.
 
 ## Shortcuts
 
